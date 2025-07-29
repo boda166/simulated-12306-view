@@ -25,10 +25,51 @@ const ProductGrid = () => {
       const data = await productsAPI.getAll();
       setProducts(data);
     } catch (error) {
-      toast.error('Failed to load products');
+      toast.error('Using demo products - API unavailable');
       console.error('Error fetching products:', error);
-      // Fallback to mock data if API fails
-      setProducts([]);
+      // Fallback to mock data
+      setProducts([
+        {
+          id: '1',
+          name: 'Midnight Elegance',
+          price: 129,
+          originalPrice: 159,
+          description: 'Handcrafted beaded evening bag',
+          images: ['/placeholder.svg'],
+          categoryId: 'evening',
+          inStock: true,
+          stockQuantity: 15,
+          colors: ['Black', 'Dark Grey'],
+          handles: ['Pearl Chain', 'Gold Chain'],
+          features: ['Handmade', 'Customizable']
+        },
+        {
+          id: '2',
+          name: 'Pearl Dreams',
+          price: 149,
+          description: 'Elegant white beaded bag',
+          images: ['/placeholder.svg'],
+          categoryId: 'classic',
+          inStock: true,
+          stockQuantity: 8,
+          colors: ['White', 'Pearl'],
+          handles: ['Gold Chain', 'Ribbon'],
+          features: ['Premium beads', 'Custom names']
+        },
+        {
+          id: '3',
+          name: 'Rose Gold Luxe',
+          price: 179,
+          description: 'Premium rose gold collection',
+          images: ['/placeholder.svg'],
+          categoryId: 'premium',
+          inStock: true,
+          stockQuantity: 12,
+          colors: ['Rose Gold', 'Champagne'],
+          handles: ['Chain', 'Ribbon'],
+          features: ['Luxury finish', 'Personalization']
+        }
+      ]);
     } finally {
       setIsLoading(false);
     }

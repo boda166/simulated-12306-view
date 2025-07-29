@@ -45,8 +45,18 @@ const Admin = () => {
       setProducts(productsData);
       setStatsData(stats);
     } catch (error) {
-      toast.error('Failed to load admin data');
+      toast.error('Using demo data - API unavailable');
       console.error('Error fetching admin data:', error);
+      // Fallback to mock data
+      setOrders([
+        { id: '1001', customerName: 'Sarah Johnson', customerEmail: 'sarah@example.com', customerPhone: '+1234567890', shippingAddress: '123 Main St', totalAmount: 129, status: 'pending', items: [], createdAt: '2024-01-15T10:00:00Z' },
+        { id: '1002', customerName: 'Emma Wilson', customerEmail: 'emma@example.com', customerPhone: '+1234567891', shippingAddress: '456 Oak Ave', totalAmount: 298, status: 'shipped', items: [], createdAt: '2024-01-14T15:30:00Z' }
+      ]);
+      setProducts([
+        { id: '1', name: 'Midnight Elegance', price: 129, description: 'Demo product', images: [], categoryId: 'evening', inStock: true, stockQuantity: 15, colors: ['Black'], handles: ['Chain'], features: [] },
+        { id: '2', name: 'Pearl Dreams', price: 149, description: 'Demo product', images: [], categoryId: 'classic', inStock: true, stockQuantity: 8, colors: ['White'], handles: ['Chain'], features: [] }
+      ]);
+      setStatsData({ totalSales: 12480, totalOrders: 156, totalProducts: 24, totalCustomers: 89 });
     } finally {
       setIsLoading(false);
     }
