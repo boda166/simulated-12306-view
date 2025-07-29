@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,7 @@ const ProductCard = ({
 }: ProductCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -48,8 +50,11 @@ const ProductCard = ({
 
   const handleQuickView = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Quick view logic here
-    console.log(`Quick view for ${name}`);
+    navigate(`/product/${id}`);
+  };
+
+  const handleCardClick = () => {
+    navigate(`/product/${id}`);
   };
 
   return (
@@ -60,6 +65,7 @@ const ProductCard = ({
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleCardClick}
     >
       {/* Image Container */}
       <div className="relative overflow-hidden aspect-square bg-luxury-pink">

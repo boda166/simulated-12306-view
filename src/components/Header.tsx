@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingBag, Menu, X, Search, Heart, User } from "lucide-react";
@@ -7,12 +8,12 @@ import { cn } from "@/lib/utils";
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [cartCount] = useState(3); // Mock cart count
+  const navigate = useNavigate();
 
   const navigation = [
-    { name: "Shop", href: "#shop" },
-    { name: "Custom Orders", href: "#custom" },
-    { name: "About", href: "#about" },
-    { name: "Contact", href: "#contact" },
+    { name: "Shop", href: "/#shop" },
+    { name: "About", href: "/about" },
+    { name: "Contact", href: "/contact" },
   ];
 
   return (
@@ -20,14 +21,14 @@ const Header = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex-shrink-0">
+          <Link to="/" className="flex-shrink-0">
             <h1 className="text-2xl font-playfair font-bold text-deep-rose">
               Luli Beads
             </h1>
             <p className="text-xs text-muted-foreground font-montserrat">
               Handcrafted Luxury
             </p>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
@@ -51,10 +52,20 @@ const Header = () => {
             <Button variant="ghost" size="icon" className="hidden sm:flex hover:text-rose-gold">
               <Heart className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="hidden sm:flex hover:text-rose-gold">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="hidden sm:flex hover:text-rose-gold"
+              onClick={() => navigate('/auth')}
+            >
               <User className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="relative hover:text-rose-gold">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="relative hover:text-rose-gold"
+              onClick={() => navigate('/cart')}
+            >
               <ShoppingBag className="h-5 w-5" />
               {cartCount > 0 && (
                 <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-rose-gold text-white text-xs">
@@ -96,7 +107,12 @@ const Header = () => {
                 <Button variant="ghost" size="icon" className="hover:text-rose-gold">
                   <Heart className="h-5 w-5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="hover:text-rose-gold">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="hover:text-rose-gold"
+                  onClick={() => navigate('/auth')}
+                >
                   <User className="h-5 w-5" />
                 </Button>
               </div>
