@@ -36,7 +36,13 @@ const Auth = () => {
       const response = await authAPI.login(loginData.email, loginData.password);
       setUser(response.user);
       toast.success('Welcome back!');
-      navigate('/');
+      
+      // Redirect admin users to admin dashboard, regular users to home
+      if (response.user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Login failed');
     } finally {
