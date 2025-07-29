@@ -1,35 +1,73 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Mail, Lock, User, Phone } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { authAPI } from '@/lib/api';
+import { useAuthStore } from '@/stores/authStore';
 
 const Auth = () => {
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({
-    firstName: '',
-    lastName: '',
+  const navigate = useNavigate();
+  const { setUser } = useAuthStore();
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loginData, setLoginData] = useState({
     email: '',
-    phone: '',
+    password: ''
+  });
+  const [registerData, setRegisterData] = useState({
+    name: '',
+    email: '',
     password: '',
     confirmPassword: ''
   });
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login:', loginData);
-    // Handle login logic
+    setIsLoading(true);
+    
+    try {
+      const response = await authAPI.login(loginData.email, loginData.password);
+      setUser(response.user);
+      toast.success('Welcome back!');
+      navigate('/');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Register:', registerData);
-    // Handle registration logic
+    
+    if (registerData.password !== registerData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const response = await authAPI.register({
+        name: registerData.name,
+        email: registerData.email,
+        password: registerData.password
+      });
+      setUser(response.user);
+      toast.success('Account created successfully!');
+      navigate('/');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Registration failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -51,21 +89,21 @@ const Auth = () => {
 
             {/* Login Tab */}
             <TabsContent value="login">
-              <Card>
+              <Card className="shadow-elegant border-0">
                 <CardHeader className="text-center">
-                  <CardTitle className="font-playfair text-2xl text-deep-rose">Welcome Back</CardTitle>
-                  <p className="text-muted-foreground">Sign in to your account</p>
+                  <CardTitle className="text-2xl font-playfair font-bold text-deep-rose">Welcome Back</CardTitle>
+                  <CardDescription className="text-muted-foreground">Sign in to your account</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div>
-                      <Label htmlFor="login-email">Email</Label>
+                  <form onSubmit={handleLogin} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="login-email">Email address</Label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                           id="login-email"
                           type="email"
-                          placeholder="your@email.com"
+                          placeholder="Enter your email"
                           className="pl-10"
                           value={loginData.email}
                           onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
@@ -73,19 +111,26 @@ const Auth = () => {
                         />
                       </div>
                     </div>
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="login-password">Password</Label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                           id="login-password"
-                          type="password"
+                          type={showPassword ? "text" : "password"}
                           placeholder="Enter your password"
-                          className="pl-10"
+                          className="pl-10 pr-10"
                           value={loginData.password}
                           onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
                           required
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
                       </div>
                     </div>
                     <div className="text-right">
@@ -93,8 +138,13 @@ const Auth = () => {
                         Forgot password?
                       </Link>
                     </div>
-                    <Button type="submit" variant="hero" className="w-full">
-                      Sign In
+                    <Button 
+                      type="submit" 
+                      variant="hero" 
+                      className="w-full"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Signing in...' : 'Sign In'}
                     </Button>
                   </form>
                 </CardContent>
@@ -103,47 +153,35 @@ const Auth = () => {
 
             {/* Register Tab */}
             <TabsContent value="register">
-              <Card>
+              <Card className="shadow-elegant border-0">
                 <CardHeader className="text-center">
-                  <CardTitle className="font-playfair text-2xl text-deep-rose">Create Account</CardTitle>
-                  <p className="text-muted-foreground">Join our boutique community</p>
+                  <CardTitle className="text-2xl font-playfair font-bold text-deep-rose">Create Account</CardTitle>
+                  <CardDescription className="text-muted-foreground">Join our boutique community</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleRegister} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="firstName">First Name</Label>
-                        <div className="relative">
-                          <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="firstName"
-                            placeholder="First name"
-                            className="pl-10"
-                            value={registerData.firstName}
-                            onChange={(e) => setRegisterData(prev => ({ ...prev, firstName: e.target.value }))}
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="lastName">Last Name</Label>
+                  <form onSubmit={handleRegister} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="register-name">Full Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
-                          id="lastName"
-                          placeholder="Last name"
-                          value={registerData.lastName}
-                          onChange={(e) => setRegisterData(prev => ({ ...prev, lastName: e.target.value }))}
+                          id="register-name"
+                          placeholder="Enter your full name"
+                          className="pl-10"
+                          value={registerData.name}
+                          onChange={(e) => setRegisterData(prev => ({ ...prev, name: e.target.value }))}
                           required
                         />
                       </div>
                     </div>
-                    <div>
-                      <Label htmlFor="register-email">Email</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="register-email">Email address</Label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                           id="register-email"
                           type="email"
-                          placeholder="your@email.com"
+                          placeholder="Enter your email"
                           className="pl-10"
                           value={registerData.email}
                           onChange={(e) => setRegisterData(prev => ({ ...prev, email: e.target.value }))}
@@ -151,43 +189,35 @@ const Auth = () => {
                         />
                       </div>
                     </div>
-                    <div>
-                      <Label htmlFor="register-phone">Phone</Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="register-phone"
-                          type="tel"
-                          placeholder="+1 (555) 123-4567"
-                          className="pl-10"
-                          value={registerData.phone}
-                          onChange={(e) => setRegisterData(prev => ({ ...prev, phone: e.target.value }))}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="register-password">Password</Label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                           id="register-password"
-                          type="password"
+                          type={showPassword ? "text" : "password"}
                           placeholder="Create a password"
-                          className="pl-10"
+                          className="pl-10 pr-10"
                           value={registerData.password}
                           onChange={(e) => setRegisterData(prev => ({ ...prev, password: e.target.value }))}
                           required
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
                       </div>
                     </div>
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="confirm-password">Confirm Password</Label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                           id="confirm-password"
-                          type="password"
+                          type={showPassword ? "text" : "password"}
                           placeholder="Confirm your password"
                           className="pl-10"
                           value={registerData.confirmPassword}
@@ -196,8 +226,13 @@ const Auth = () => {
                         />
                       </div>
                     </div>
-                    <Button type="submit" variant="hero" className="w-full">
-                      Create Account
+                    <Button 
+                      type="submit" 
+                      variant="hero" 
+                      className="w-full"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Creating account...' : 'Create Account'}
                     </Button>
                   </form>
                 </CardContent>

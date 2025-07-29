@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import { 
   Package, 
   ShoppingCart, 
@@ -14,25 +15,68 @@ import {
   Trash2
 } from 'lucide-react';
 import Header from '@/components/Header';
+import { adminAPI, ordersAPI, productsAPI, Product, Order } from '@/lib/api';
 
 const Admin = () => {
-  const [orders] = useState([
-    { id: '1001', customer: 'Sarah Johnson', total: 129, status: 'pending', date: '2024-01-15' },
-    { id: '1002', customer: 'Emma Wilson', total: 298, status: 'shipped', date: '2024-01-14' },
-    { id: '1003', customer: 'Maria Garcia', total: 149, status: 'delivered', date: '2024-01-13' },
-  ]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [statsData, setStatsData] = useState({
+    totalSales: 0,
+    totalOrders: 0,
+    totalProducts: 0,
+    totalCustomers: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [products] = useState([
-    { id: '1', name: 'Midnight Elegance', price: 129, stock: 15, sales: 23 },
-    { id: '2', name: 'Pearl Dreams', price: 149, stock: 8, sales: 18 },
-    { id: '3', name: 'Rose Gold Luxury', price: 179, stock: 12, sales: 15 },
-  ]);
+  useEffect(() => {
+    fetchAdminData();
+  }, []);
+
+  const fetchAdminData = async () => {
+    try {
+      setIsLoading(true);
+      const [ordersData, productsData, stats] = await Promise.all([
+        ordersAPI.getAll(),
+        productsAPI.getAll(),
+        adminAPI.getStats()
+      ]);
+      
+      setOrders(ordersData);
+      setProducts(productsData);
+      setStatsData(stats);
+    } catch (error) {
+      toast.error('Failed to load admin data');
+      console.error('Error fetching admin data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const stats = [
-    { title: 'Total Sales', value: '$12,480', icon: DollarSign, trend: '+12%' },
-    { title: 'Orders', value: '156', icon: ShoppingCart, trend: '+8%' },
-    { title: 'Products', value: '24', icon: Package, trend: '+2%' },
-    { title: 'Customers', value: '89', icon: Users, trend: '+15%' },
+    { 
+      title: 'Total Sales', 
+      value: `$${statsData.totalSales.toLocaleString()}`, 
+      icon: DollarSign, 
+      trend: '+12%' 
+    },
+    { 
+      title: 'Orders', 
+      value: statsData.totalOrders.toString(), 
+      icon: ShoppingCart, 
+      trend: '+8%' 
+    },
+    { 
+      title: 'Products', 
+      value: statsData.totalProducts.toString(), 
+      icon: Package, 
+      trend: '+2%' 
+    },
+    { 
+      title: 'Customers', 
+      value: statsData.totalCustomers.toString(), 
+      icon: Users, 
+      trend: '+15%' 
+    },
   ];
 
   const getStatusColor = (status: string) => {
@@ -43,6 +87,19 @@ const Admin = () => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <p className="text-muted-foreground">Loading admin dashboard...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -93,29 +150,33 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {orders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="space-y-1">
-                        <p className="font-medium">#{order.id}</p>
-                        <p className="text-sm text-muted-foreground">{order.customer}</p>
-                        <p className="text-xs text-muted-foreground">{order.date}</p>
+                  {orders.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No orders found</p>
+                  ) : (
+                    orders.map((order) => (
+                      <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-1">
+                          <p className="font-medium">#{order.id}</p>
+                          <p className="text-sm text-muted-foreground">{order.customerName}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">${order.totalAmount.toFixed(2)}</p>
+                          <Badge className={`${getStatusColor(order.status)} border-0`}>
+                            {order.status}
+                          </Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="icon">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button variant="outline" size="icon">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">${order.total}</p>
-                        <Badge className={`${getStatusColor(order.status)} border-0`}>
-                          {order.status}
-                        </Badge>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="icon">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="icon">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -132,29 +193,33 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {products.map((product) => (
-                    <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="space-y-1">
-                        <p className="font-medium">{product.name}</p>
-                        <p className="text-sm text-muted-foreground">Stock: {product.stock}</p>
-                        <p className="text-xs text-muted-foreground">Sales: {product.sales}</p>
+                  {products.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No products found</p>
+                  ) : (
+                    products.map((product) => (
+                      <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-1">
+                          <p className="font-medium">{product.name}</p>
+                          <p className="text-sm text-muted-foreground">Stock: {product.stockQuantity}</p>
+                          <p className="text-xs text-muted-foreground">Category: {product.categoryId}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">${product.price}</p>
+                          <Badge variant={product.inStock ? 'default' : 'destructive'}>
+                            {product.inStock ? 'In Stock' : 'Out of Stock'}
+                          </Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="icon">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button variant="outline" size="icon">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">${product.price}</p>
-                        <Badge variant={product.stock > 10 ? 'default' : 'destructive'}>
-                          {product.stock > 10 ? 'In Stock' : 'Low Stock'}
-                        </Badge>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="icon">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="icon">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

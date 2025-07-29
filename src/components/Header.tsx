@@ -1,14 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Menu, X, Search, Heart, User } from "lucide-react";
+import { ShoppingBag, Menu, X, Search, Heart, User, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/authStore";
+import { authAPI, cartAPI } from "@/lib/api";
+import { toast } from "sonner";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [cartCount] = useState(3); // Mock cart count
+  const [cartCount, setCartCount] = useState(0);
   const navigate = useNavigate();
+  const { user, isAuthenticated, clearUser } = useAuthStore();
 
   const navigation = [
     { name: "Shop", href: "/#shop", isShopLink: true },

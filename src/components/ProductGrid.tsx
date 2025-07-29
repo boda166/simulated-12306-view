@@ -1,209 +1,202 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Grid, List, Filter, SlidersHorizontal } from "lucide-react";
 import ProductCard from "./ProductCard";
-import { Filter, SlidersHorizontal, Grid3X3, Grid2X2 } from "lucide-react";
-import productBlack from "@/assets/product-black-bag.jpg";
-import productWhite from "@/assets/product-white-bag.jpg";
-import productRose from "@/assets/product-rose-bag.jpg";
+import { productsAPI, Product } from "@/lib/api";
+import { toast } from "sonner";
 
 const ProductGrid = () => {
-  const [viewMode, setViewMode] = useState<'grid' | 'large'>('grid');
-  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedColor, setSelectedColor] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('name');
 
-  // Mock product data
-  const products = [
-    {
-      id: '1',
-      name: 'Midnight Elegance',
-      price: 129,
-      originalPrice: 159,
-      image: productBlack,
-      category: 'Evening Bags',
-      isNew: true,
-      isBestseller: false,
-      colors: ['#000000', '#1a1a1a', '#333333'],
-      customizable: true,
-    },
-    {
-      id: '2',
-      name: 'Pearl Dreams',
-      price: 149,
-      image: productWhite,
-      category: 'Classic Collection',
-      isNew: false,
-      isBestseller: true,
-      colors: ['#ffffff', '#f8f8f8', '#e0e0e0', '#d4af37'],
-      customizable: true,
-    },
-    {
-      id: '3',
-      name: 'Rose Gold Luxe',
-      price: 179,
-      image: productRose,
-      category: 'Premium Line',
-      isNew: true,
-      isBestseller: true,
-      colors: ['#e8b4b8', '#d4af37', '#f4c2a1'],
-      customizable: true,
-    },
-    {
-      id: '4',
-      name: 'Crystal Nights',
-      price: 199,
-      image: productBlack,
-      category: 'Evening Bags',
-      isNew: false,
-      isBestseller: false,
-      colors: ['#000000', '#4a4a4a', '#c0c0c0'],
-      customizable: true,
-    },
-    {
-      id: '5',
-      name: 'Ivory Grace',
-      price: 135,
-      originalPrice: 165,
-      image: productWhite,
-      category: 'Classic Collection',
-      isNew: false,
-      isBestseller: true,
-      colors: ['#ffffff', '#f5f5dc', '#fff8dc'],
-      customizable: true,
-    },
-    {
-      id: '6',
-      name: 'Champagne Glow',
-      price: 189,
-      image: productRose,
-      category: 'Premium Line',
-      isNew: true,
-      isBestseller: false,
-      colors: ['#f7e7ce', '#d4af37', '#e8b4b8'],
-      customizable: true,
-    },
-  ];
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
-  const filters = [
-    { id: 'all', name: 'All Products', count: products.length },
-    { id: 'evening', name: 'Evening Bags', count: 2 },
-    { id: 'classic', name: 'Classic', count: 2 },
-    { id: 'premium', name: 'Premium', count: 2 },
-    { id: 'new', name: 'New Arrivals', count: 3 },
-    { id: 'bestseller', name: 'Bestsellers', count: 3 },
-  ];
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true);
+      const data = await productsAPI.getAll();
+      setProducts(data);
+    } catch (error) {
+      toast.error('Failed to load products');
+      console.error('Error fetching products:', error);
+      // Fallback to mock data if API fails
+      setProducts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredProducts = products.filter(product => {
-    if (selectedFilter === 'all') return true;
-    if (selectedFilter === 'evening') return product.category === 'Evening Bags';
-    if (selectedFilter === 'classic') return product.category === 'Classic Collection';
-    if (selectedFilter === 'premium') return product.category === 'Premium Line';
-    if (selectedFilter === 'new') return product.isNew;
-    if (selectedFilter === 'bestseller') return product.isBestseller;
+    if (selectedCategory !== 'all' && product.categoryId !== selectedCategory) return false;
+    if (selectedColor !== 'all' && !product.colors.includes(selectedColor)) return false;
     return true;
   });
 
-  return (
-    <section id="shop" className="py-16 bg-background">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-playfair font-bold text-deep-rose mb-4">
-            Our Collection
-          </h2>
-          <p className="text-lg text-muted-foreground font-montserrat max-w-2xl mx-auto">
-            Discover our carefully curated selection of handcrafted beaded bags. 
-            Each piece is unique and can be personalized to your style.
-          </p>
-        </div>
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    switch (sortBy) {
+      case 'price-low':
+        return a.price - b.price;
+      case 'price-high':
+        return b.price - a.price;
+      case 'name':
+        return a.name.localeCompare(b.name);
+      default:
+        return 0;
+    }
+  });
 
-        {/* Filters and View Controls */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
-          
-          {/* Filter Pills */}
-          <div className="flex flex-wrap gap-2">
-            {filters.map((filter) => (
-              <Button
-                key={filter.id}
-                variant={selectedFilter === filter.id ? "elegant" : "boutique"}
-                size="sm"
-                onClick={() => setSelectedFilter(filter.id)}
-                className="text-sm"
-              >
-                {filter.name}
-                <Badge 
-                  variant="secondary" 
-                  className="ml-2 text-xs bg-white/80 text-deep-rose"
-                >
-                  {filter.count}
-                </Badge>
-              </Button>
+  if (isLoading) {
+    return (
+      <section className="py-16 bg-background" id="shop">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-playfair font-bold text-deep-rose mb-4">
+              Our Collection
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Loading our beautiful handcrafted beaded bags...
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="bg-muted h-80 rounded-2xl mb-4"></div>
+                <div className="bg-muted h-4 rounded mb-2"></div>
+                <div className="bg-muted h-4 rounded w-2/3"></div>
+              </div>
             ))}
           </div>
-
-          {/* View Controls */}
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-            </Button>
-            
-            <div className="flex border border-border rounded-lg overflow-hidden">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="rounded-none border-0"
-              >
-                <Grid3X3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'large' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('large')}
-                className="rounded-none border-0 border-l border-border"
-              >
-                <Grid2X2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
         </div>
+      </section>
+    );
+  }
 
-        {/* Results Count */}
-        <div className="flex justify-between items-center mb-6">
-          <p className="text-sm text-muted-foreground font-montserrat">
-            Showing {filteredProducts.length} of {products.length} products
+  return (
+    <section className="py-16 bg-background" id="shop">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-playfair font-bold text-deep-rose mb-4">
+            Our Collection
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Discover our exquisite handcrafted beaded bags, each piece uniquely designed with love and attention to detail
           </p>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground font-montserrat">
-            <Filter className="h-4 w-4" />
-            Sort by: Newest
+        </div>
+
+        {/* Filters and Controls */}
+        <div className="flex flex-col lg:flex-row justify-between items-center mb-8 gap-4">
+          <div className="flex flex-wrap gap-4">
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="handbags">Handbags</SelectItem>
+                <SelectItem value="clutches">Clutches</SelectItem>
+                <SelectItem value="evening">Evening Bags</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedColor} onValueChange={setSelectedColor}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Color" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Colors</SelectItem>
+                <SelectItem value="Black">Black</SelectItem>
+                <SelectItem value="White">White</SelectItem>
+                <SelectItem value="Rose Gold">Rose Gold</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name A-Z</SelectItem>
+                <SelectItem value="price-low">Price: Low to High</SelectItem>
+                <SelectItem value="price-high">Price: High to Low</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => setViewMode('grid')}
+            >
+              <Grid className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
-        {/* Product Grid */}
-        <div className={`grid gap-6 ${
-          viewMode === 'grid' 
-            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
-            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-        }`}>
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              {...product}
-              className="animate-fade-in"
-            />
-          ))}
+        {/* Results count */}
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-muted-foreground">
+            Showing {sortedProducts.length} of {products.length} products
+          </p>
         </div>
 
-        {/* Load More */}
-        {filteredProducts.length < products.length && (
-          <div className="text-center mt-12">
-            <Button variant="boutique" size="lg">
-              Load More Products
-            </Button>
+        {/* Products Grid */}
+        {sortedProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground mb-4">
+              {products.length === 0 
+                ? "No products available at the moment." 
+                : "No products found matching your filters."
+              }
+            </p>
+            {filteredProducts.length === 0 && products.length > 0 && (
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSelectedCategory('all');
+                  setSelectedColor('all');
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className={`grid gap-8 ${
+            viewMode === 'grid' 
+              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+              : 'grid-cols-1'
+          }`}>
+            {sortedProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                id={product.id}
+                name={product.name}
+                price={product.price}
+                originalPrice={product.originalPrice}
+                image={product.images[0] || '/placeholder.svg'}
+                category={product.categoryId}
+                isNew={false}
+                isBestseller={false}
+                colors={product.colors}
+                customizable={true}
+              />
+            ))}
           </div>
         )}
       </div>
