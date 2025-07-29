@@ -14,11 +14,35 @@ const Header = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, clearUser } = useAuthStore();
 
+  useEffect(() => {
+    // Fetch cart count when user is authenticated
+    if (isAuthenticated) {
+      fetchCartCount();
+    }
+  }, [isAuthenticated]);
+
+  const fetchCartCount = async () => {
+    try {
+      const cartItems = await cartAPI.get();
+      setCartCount(cartItems.reduce((sum, item) => sum + item.quantity, 0));
+    } catch (error) {
+      setCartCount(0);
+    }
+  };
+
+  const handleLogout = () => {
+    authAPI.logout();
+    clearUser();
+    setCartCount(0);
+    toast.success('Logged out successfully');
+    navigate('/');
+  };
+
   const navigation = [
+    { name: "Home", href: "/", isLink: true },
     { name: "Shop", href: "/#shop", isShopLink: true },
-    { name: "About", href: "/about" },
-    { name: "Contact", href: "/contact" },
-    { name: "Admin", href: "/admin" },
+    { name: "About", href: "/about", isLink: true },
+    { name: "Contact", href: "/contact", isLink: true },
   ];
 
   return (
@@ -64,6 +88,16 @@ const Header = () => {
                 </Link>
               )
             ))}
+            {/* Admin link - only show for admin users */}
+            {isAuthenticated && user?.role === 'admin' && (
+              <Link
+                to="/admin"
+                className="text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200 relative group"
+              >
+                Admin
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-gold transition-all duration-300 group-hover:w-full"></span>
+              </Link>
+            )}
           </nav>
 
           {/* Right side icons */}
@@ -78,9 +112,9 @@ const Header = () => {
               variant="ghost" 
               size="icon" 
               className="hidden sm:flex hover:text-rose-gold"
-              onClick={() => navigate('/auth')}
+              onClick={() => isAuthenticated ? handleLogout() : navigate('/auth')}
             >
-              <User className="h-5 w-5" />
+              {isAuthenticated ? <LogOut className="h-5 w-5" /> : <User className="h-5 w-5" />}
             </Button>
             <Button 
               variant="ghost" 
@@ -139,6 +173,16 @@ const Header = () => {
                   </Link>
                 )
               ))}
+              {/* Admin link in mobile menu - only for admin users */}
+              {isAuthenticated && user?.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  className="block px-3 py-2 text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Admin
+                </Link>
+              )}
               <div className="flex space-x-4 px-3 pt-4">
                 <Button variant="ghost" size="icon" className="hover:text-rose-gold">
                   <Search className="h-5 w-5" />
@@ -150,9 +194,9 @@ const Header = () => {
                   variant="ghost" 
                   size="icon" 
                   className="hover:text-rose-gold"
-                  onClick={() => navigate('/auth')}
+                  onClick={() => isAuthenticated ? handleLogout() : navigate('/auth')}
                 >
-                  <User className="h-5 w-5" />
+                  {isAuthenticated ? <LogOut className="h-5 w-5" /> : <User className="h-5 w-5" />}
                 </Button>
               </div>
             </div>
