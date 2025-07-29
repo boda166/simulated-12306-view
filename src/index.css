@@ -2,39 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Luli Beads Design System - Luxury Beaded Bags E-commerce */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Base Colors - Soft Pink & Rose Gold Palette */
+    --background: 330 100% 99%;  /* Soft pink background */
+    --foreground: 345 15% 25%;   /* Deep rose text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 330 100% 98%;
+    --card-foreground: 345 15% 25%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 330 100% 99%;
+    --popover-foreground: 345 15% 25%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Rose Gold */
+    --primary: 25 65% 65%;       /* Rose gold */
+    --primary-foreground: 330 100% 99%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Soft Pink */
+    --secondary: 330 50% 95%;    /* Light pink */
+    --secondary-foreground: 345 15% 35%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Accent - Deep Rose */
+    --accent: 345 65% 75%;       /* Medium rose */
+    --accent-foreground: 330 100% 99%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --muted: 330 30% 96%;
+    --muted-foreground: 345 10% 45%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 330 100% 99%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 330 30% 90%;
+    --input: 330 30% 95%;
+    --ring: 25 65% 65%;
+
+    /* Custom Luli Beads Tokens */
+    --luxury-pink: 330 100% 97%;     /* Very light pink */
+    --rose-gold: 25 65% 65%;         /* Rose gold accent */
+    --deep-rose: 345 65% 45%;        /* Deep rose for text */
+    --cream: 45 85% 97%;             /* Cream white */
+    --gold-shimmer: 45 85% 85%;      /* Light gold */
+    
+    /* Gradients */
+    --gradient-luxury: linear-gradient(135deg, hsl(var(--luxury-pink)), hsl(var(--cream)));
+    --gradient-rose: linear-gradient(135deg, hsl(var(--rose-gold)), hsl(45 75% 75%));
+    --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--luxury-pink)));
+    
+    /* Shadows */
+    --shadow-luxury: 0 10px 30px -5px hsl(var(--rose-gold) / 0.2);
+    --shadow-elegant: 0 5px 20px -5px hsl(var(--rose-gold) / 0.15);
+    --shadow-soft: 0 2px 10px -2px hsl(var(--rose-gold) / 0.1);
 
     --radius: 0.5rem;
 
@@ -100,6 +119,29 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-montserrat;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-playfair;
+  }
+}
+
+/* Custom component classes for Luli Beads */
+@layer components {
+  .luxury-gradient {
+    @apply bg-gradient-luxury;
+  }
+  
+  .rose-gradient {
+    @apply bg-gradient-rose;
+  }
+  
+  .elegant-shadow {
+    @apply shadow-elegant;
+  }
+  
+  .luxury-shadow {
+    @apply shadow-luxury;
   }
 }
