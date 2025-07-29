@@ -12,7 +12,12 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const navigate = useNavigate();
-  const { user, isAuthenticated, clearUser } = useAuthStore();
+  const { user, isAuthenticated, clearUser, initializeAuth } = useAuthStore();
+
+  useEffect(() => {
+    // Initialize auth on component mount
+    initializeAuth();
+  }, [initializeAuth]);
 
   useEffect(() => {
     // Fetch cart count when user is authenticated

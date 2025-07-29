@@ -1,33 +1,47 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
 import { 
+  DollarSign, 
   Package, 
   ShoppingCart, 
   Users, 
-  DollarSign, 
-  TrendingUp, 
-  Eye,
-  Edit,
-  Trash2
+  Eye, 
+  Edit, 
+  Trash2, 
+  Plus,
+  TrendingUp 
 } from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
+import { adminAPI, ordersAPI, productsAPI, Order, Product } from '@/lib/api';
 import Header from '@/components/Header';
-import { adminAPI, ordersAPI, productsAPI, Product, Order } from '@/lib/api';
+import Footer from '@/components/Footer';
+import { toast } from 'sonner';
+import AdminProductForm from '@/components/AdminProductForm';
+import AdminOrderDetails from '@/components/AdminOrderDetails';
 
 const Admin = () => {
+  const { user, isAuthenticated } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [statsData, setStatsData] = useState({
+  const [stats, setStats] = useState({
     totalSales: 0,
     totalOrders: 0,
     totalProducts: 0,
-    totalCustomers: 0
+    totalCustomers: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
+  // Redirect if not admin
+  if (!isAuthenticated || user?.role !== 'admin') {
+    return <Navigate to="/auth" replace />;
+  }
   useEffect(() => {
     fetchAdminData();
   }, []);
@@ -35,7 +49,7 @@ const Admin = () => {
   const fetchAdminData = async () => {
     try {
       setIsLoading(true);
-      const [ordersData, productsData, stats] = await Promise.all([
+      const [ordersData, productsData, statsData] = await Promise.all([
         ordersAPI.getAll(),
         productsAPI.getAll(),
         adminAPI.getStats()
@@ -43,7 +57,7 @@ const Admin = () => {
       
       setOrders(ordersData);
       setProducts(productsData);
-      setStatsData(stats);
+      setStats(statsData);
     } catch (error) {
       toast.error('Using demo data - API unavailable');
       console.error('Error fetching admin data:', error);
@@ -56,34 +70,92 @@ const Admin = () => {
         { id: '1', name: 'Midnight Elegance', price: 129, description: 'Demo product', images: [], categoryId: 'evening', inStock: true, stockQuantity: 15, colors: ['Black'], handles: ['Chain'], features: [] },
         { id: '2', name: 'Pearl Dreams', price: 149, description: 'Demo product', images: [], categoryId: 'classic', inStock: true, stockQuantity: 8, colors: ['White'], handles: ['Chain'], features: [] }
       ]);
-      setStatsData({ totalSales: 12480, totalOrders: 156, totalProducts: 24, totalCustomers: 89 });
+      setStats({ totalSales: 12480, totalOrders: 156, totalProducts: 24, totalCustomers: 89 });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const stats = [
+  const handleCreateProduct = async (productData: Omit<Product, 'id'>) => {
+    try {
+      const newProduct = await productsAPI.create(productData);
+      setProducts(prev => [...prev, newProduct]);
+      setShowProductForm(false);
+    } catch (error) {
+      // Fallback for offline mode
+      const mockProduct: Product = {
+        ...productData,
+        id: 'product-' + Date.now(),
+      };
+      setProducts(prev => [...prev, mockProduct]);
+      setShowProductForm(false);
+      toast.success('Product created (offline mode)');
+    }
+  };
+
+  const handleUpdateProduct = async (productData: Omit<Product, 'id'>) => {
+    if (!editingProduct) return;
+    
+    try {
+      const updatedProduct = await productsAPI.update(editingProduct.id, productData);
+      setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
+      setEditingProduct(null);
+      setShowProductForm(false);
+    } catch (error) {
+      // Fallback for offline mode
+      const mockProduct: Product = { ...productData, id: editingProduct.id };
+      setProducts(prev => prev.map(p => p.id === editingProduct.id ? mockProduct : p));
+      setEditingProduct(null);
+      setShowProductForm(false);
+      toast.success('Product updated (offline mode)');
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      await productsAPI.delete(productId);
+      setProducts(prev => prev.filter(p => p.id !== productId));
+      toast.success('Product deleted');
+    } catch (error) {
+      // Fallback for offline mode
+      setProducts(prev => prev.filter(p => p.id !== productId));
+      toast.success('Product deleted (offline mode)');
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId: string, status: Order['status']) => {
+    try {
+      await ordersAPI.updateStatus(orderId, status);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+    } catch (error) {
+      // Fallback for offline mode
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+      toast.success('Order status updated (offline mode)');
+    }
+  };
+
+  const statsArray = [
     { 
       title: 'Total Sales', 
-      value: `$${statsData.totalSales.toLocaleString()}`, 
+      value: `$${stats.totalSales.toLocaleString()}`, 
       icon: DollarSign, 
       trend: '+12%' 
     },
     { 
       title: 'Orders', 
-      value: statsData.totalOrders.toString(), 
+      value: stats.totalOrders.toString(), 
       icon: ShoppingCart, 
       trend: '+8%' 
     },
     { 
       title: 'Products', 
-      value: statsData.totalProducts.toString(), 
+      value: stats.totalProducts.toString(), 
       icon: Package, 
       trend: '+2%' 
     },
     { 
       title: 'Customers', 
-      value: statsData.totalCustomers.toString(), 
+      value: stats.totalCustomers.toString(), 
       icon: Users, 
       trend: '+15%' 
     },
@@ -123,7 +195,7 @@ const Admin = () => {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat) => (
+          {statsArray.map((stat) => (
             <Card key={stat.title}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -177,11 +249,12 @@ const Admin = () => {
                           </Badge>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="icon">
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            onClick={() => setSelectedOrder(order)}
+                          >
                             <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button variant="outline" size="icon">
-                            <Edit className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
@@ -199,7 +272,16 @@ const Admin = () => {
                   <CardTitle>Product Management</CardTitle>
                   <CardDescription>Manage your product catalog</CardDescription>
                 </div>
-                <Button variant="hero">Add Product</Button>
+                <Button 
+                  variant="hero"
+                  onClick={() => {
+                    setEditingProduct(null);
+                    setShowProductForm(true);
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Product
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -220,10 +302,21 @@ const Admin = () => {
                           </Badge>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="icon">
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            onClick={() => {
+                              setEditingProduct(product);
+                              setShowProductForm(true);
+                            }}
+                          >
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button variant="outline" size="icon">
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            onClick={() => handleDeleteProduct(product.id)}
+                          >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -265,7 +358,32 @@ const Admin = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Admin Product Form Modal */}
+        {showProductForm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <AdminProductForm
+              product={editingProduct}
+              onSave={editingProduct ? handleUpdateProduct : handleCreateProduct}
+              onCancel={() => {
+                setShowProductForm(false);
+                setEditingProduct(null);
+              }}
+            />
+          </div>
+        )}
+
+        {/* Admin Order Details Modal */}
+        {selectedOrder && (
+          <AdminOrderDetails
+            order={selectedOrder}
+            onUpdateStatus={handleUpdateOrderStatus}
+            onClose={() => setSelectedOrder(null)}
+          />
+        )}
       </main>
+
+      <Footer />
     </div>
   );
 };
