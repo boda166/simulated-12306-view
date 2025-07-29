@@ -11,9 +11,10 @@ const Header = () => {
   const navigate = useNavigate();
 
   const navigation = [
-    { name: "Shop", href: "/#shop" },
+    { name: "Shop", href: "/#shop", isShopLink: true },
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
+    { name: "Admin", href: "/admin" },
   ];
 
   return (
@@ -33,14 +34,31 @@ const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
             {navigation.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200 relative group"
-              >
-                {item.name}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-gold transition-all duration-300 group-hover:w-full"></span>
-              </a>
+              item.isShopLink ? (
+                <button
+                  key={item.name}
+                  onClick={() => {
+                    if (window.location.pathname === '/') {
+                      document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                      window.location.href = '/#shop';
+                    }
+                  }}
+                  className="text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200 relative group"
+                >
+                  {item.name}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-gold transition-all duration-300 group-hover:w-full"></span>
+                </button>
+              ) : (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className="text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200 relative group"
+                >
+                  {item.name}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-gold transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+              )
             ))}
           </nav>
 
@@ -91,14 +109,31 @@ const Header = () => {
           <div className="md:hidden border-t border-border">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigation.map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className="block px-3 py-2 text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.name}
-                </a>
+                item.isShopLink ? (
+                  <button
+                    key={item.name}
+                    onClick={() => {
+                      if (window.location.pathname === '/') {
+                        document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.location.href = '/#shop';
+                      }
+                      setIsMenuOpen(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200"
+                  >
+                    {item.name}
+                  </button>
+                ) : (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className="block px-3 py-2 text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                )
               ))}
               <div className="flex space-x-4 px-3 pt-4">
                 <Button variant="ghost" size="icon" className="hover:text-rose-gold">
