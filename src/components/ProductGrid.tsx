@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Grid, List, Filter, SlidersHorizontal } from "lucide-react";
 import ProductCard from "./ProductCard";
-import { productsAPI, Product } from "@/lib/api";
+import { Product } from "@/lib/api";
+import { getAllProducts } from "@/lib/mockData";
 import { toast } from "sonner";
 
 const ProductGrid = () => {
@@ -22,54 +23,13 @@ const ProductGrid = () => {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const data = await productsAPI.getAll();
+      // Use mock data for now
+      const data = getAllProducts();
       setProducts(data);
     } catch (error) {
-      toast.error('Using demo products - API unavailable');
-      console.error('Error fetching products:', error);
-      // Fallback to mock data
-      setProducts([
-        {
-          id: '1',
-          name: 'Midnight Elegance',
-          price: 129,
-          originalPrice: 159,
-          description: 'Handcrafted beaded evening bag',
-          images: ['/placeholder.svg'],
-          categoryId: 'evening',
-          inStock: true,
-          stockQuantity: 15,
-          colors: ['Black', 'Dark Grey'],
-          handles: ['Pearl Chain', 'Gold Chain'],
-          features: ['Handmade', 'Customizable']
-        },
-        {
-          id: '2',
-          name: 'Pearl Dreams',
-          price: 149,
-          description: 'Elegant white beaded bag',
-          images: ['/placeholder.svg'],
-          categoryId: 'classic',
-          inStock: true,
-          stockQuantity: 8,
-          colors: ['White', 'Pearl'],
-          handles: ['Gold Chain', 'Ribbon'],
-          features: ['Premium beads', 'Custom names']
-        },
-        {
-          id: '3',
-          name: 'Rose Gold Luxe',
-          price: 179,
-          description: 'Premium rose gold collection',
-          images: ['/placeholder.svg'],
-          categoryId: 'premium',
-          inStock: true,
-          stockQuantity: 12,
-          colors: ['Rose Gold', 'Champagne'],
-          handles: ['Chain', 'Ribbon'],
-          features: ['Luxury finish', 'Personalization']
-        }
-      ]);
+      console.error('Error loading products:', error);
+      toast.error('Error loading products');
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }
@@ -141,9 +101,10 @@ const ProductGrid = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="handbags">Handbags</SelectItem>
-                <SelectItem value="clutches">Clutches</SelectItem>
-                <SelectItem value="evening">Evening Bags</SelectItem>
+                <SelectItem value="evening">Evening</SelectItem>
+                <SelectItem value="bridal">Bridal</SelectItem>
+                <SelectItem value="luxury">Luxury</SelectItem>
+                <SelectItem value="classic">Classic</SelectItem>
               </SelectContent>
             </Select>
 

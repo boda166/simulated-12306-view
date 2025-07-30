@@ -5,40 +5,24 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingBag, Menu, X, Search, Heart, User, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
-import { authAPI, cartAPI } from "@/lib/api";
+import { useCartStore } from "@/stores/cartStore";
+import { authAPI } from "@/lib/api";
 import { toast } from "sonner";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
   const navigate = useNavigate();
   const { user, isAuthenticated, clearUser, initializeAuth } = useAuthStore();
+  const { totalItems } = useCartStore();
 
   useEffect(() => {
     // Initialize auth on component mount
     initializeAuth();
   }, [initializeAuth]);
 
-  useEffect(() => {
-    // Fetch cart count when user is authenticated
-    if (isAuthenticated) {
-      fetchCartCount();
-    }
-  }, [isAuthenticated]);
-
-  const fetchCartCount = async () => {
-    try {
-      const cartItems = await cartAPI.get();
-      setCartCount(cartItems.reduce((sum, item) => sum + item.quantity, 0));
-    } catch (error) {
-      setCartCount(0);
-    }
-  };
-
   const handleLogout = () => {
     authAPI.logout();
     clearUser();
-    setCartCount(0);
     toast.success('Logged out successfully');
     navigate('/');
   };
@@ -128,9 +112,9 @@ const Header = () => {
               onClick={() => navigate('/cart')}
             >
               <ShoppingBag className="h-5 w-5" />
-              {cartCount > 0 && (
+              {totalItems > 0 && (
                 <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-rose-gold text-white text-xs">
-                  {cartCount}
+                  {totalItems}
                 </Badge>
               )}
             </Button>

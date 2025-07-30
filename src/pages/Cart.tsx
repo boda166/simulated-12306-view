@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,56 +7,56 @@ import { Separator } from '@/components/ui/separator';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { useCartStore } from '@/stores/cartStore';
+import { getProductById } from '@/lib/mockData';
+import { useToast } from '@/hooks/use-toast';
 import productBlack from '@/assets/product-black-bag.jpg';
-import productWhite from '@/assets/product-white-bag.jpg';
 
 const Cart = () => {
-  const [cartItems, setCartItems] = useState([
-    {
-      id: '1',
-      name: 'Midnight Elegance',
-      price: 129,
-      image: productBlack,
-      quantity: 1,
-      customName: 'Sarah',
-      color: 'Black',
-      handle: 'Pearl Chain'
-    },
-    {
-      id: '2',
-      name: 'Pearl Dreams',
-      price: 149,
-      image: productWhite,
-      quantity: 2,
-      customName: '',
-      color: 'White',
-      handle: 'Gold Chain'
-    }
-  ]);
-
+  const { items: cartItems, updateQuantity, removeItem, clearCart } = useCartStore();
+  const { toast } = useToast();
   const [couponCode, setCouponCode] = useState('');
+  const [displayItems, setDisplayItems] = useState<any[]>([]);
 
-  const updateQuantity = (id: string, newQuantity: number) => {
-    if (newQuantity === 0) {
-      removeItem(id);
-      return;
-    }
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
+  useEffect(() => {
+    // Convert cart items to display items with product data
+    const items = cartItems.map(cartItem => {
+      const product = getProductById(cartItem.productId);
+      return {
+        id: cartItem.productId,
+        name: product?.name || 'Unknown Product',
+        price: product?.price || 0,
+        image: product?.images[0] || productBlack,
+        quantity: cartItem.quantity,
+        customName: cartItem.customName || '',
+        color: cartItem.selectedColor || '',
+        handle: cartItem.selectedHandle || ''
+      };
+    });
+    setDisplayItems(items);
+  }, [cartItems]);
+
+  const handleUpdateQuantity = (id: string, newQuantity: number) => {
+    updateQuantity(id, newQuantity);
+    toast({
+      title: "Cart Updated",
+      description: newQuantity === 0 ? "Item removed from cart" : "Quantity updated",
+    });
   };
 
-  const removeItem = (id: string) => {
-    setCartItems(items => items.filter(item => item.id !== id));
+  const handleRemoveItem = (id: string) => {
+    removeItem(id);
+    toast({
+      title: "Item Removed",
+      description: "Item has been removed from your cart",
+    });
   };
 
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = displayItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const shipping = subtotal > 100 ? 0 : 15;
   const total = subtotal + shipping;
 
-  if (cartItems.length === 0) {
+  if (displayItems.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -88,7 +88,7 @@ const Cart = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
-            {cartItems.map((item) => (
+            {displayItems.map((item) => (
               <Card key={item.id} className="overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex gap-4">
@@ -106,7 +106,7 @@ const Cart = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => handleRemoveItem(item.id)}
                           className="text-muted-foreground hover:text-destructive"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -124,7 +124,7 @@ const Cart = () => {
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                             className="h-8 w-8"
                           >
                             <Minus className="w-3 h-3" />
@@ -133,7 +133,7 @@ const Cart = () => {
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                             className="h-8 w-8"
                           >
                             <Plus className="w-3 h-3" />
@@ -181,7 +181,19 @@ const Cart = () => {
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
                     />
-                    <Button variant="outline">Apply</Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        if (couponCode.trim()) {
+                          toast({
+                            title: "Coupon Applied",
+                            description: "Coupon functionality coming soon!",
+                          });
+                        }
+                      }}
+                    >
+                      Apply
+                    </Button>
                   </div>
                 </div>
 

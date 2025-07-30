@@ -39,8 +39,17 @@ const Checkout = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.email || !formData.firstName || !formData.lastName || 
+        !formData.phone || !formData.address || !formData.city || !formData.postalCode) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    
     // Handle order submission
     console.log('Order submitted:', { formData, paymentMethod, orderItems });
+    alert(`Order submitted successfully! Total: $${total.toFixed(2)}`);
   };
 
   return (

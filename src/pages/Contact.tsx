@@ -19,7 +19,10 @@ const Contact = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Contact form submitted:', formData);
-    // Handle form submission
+    
+    // Simulate form submission
+    alert('Thank you for your message! We\'ll get back to you soon.');
+    setFormData({ name: '', email: '', subject: '', message: '' });
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -110,7 +113,11 @@ const Contact = () => {
                     <p className="text-muted-foreground mb-3">
                       For quick responses and custom orders
                     </p>
-                    <Button variant="boutique" size="sm">
+                    <Button 
+                      variant="boutique" 
+                      size="sm"
+                      onClick={() => window.open('https://wa.me/15551234567', '_blank')}
+                    >
                       Chat on WhatsApp
                     </Button>
                   </div>

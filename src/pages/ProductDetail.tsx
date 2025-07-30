@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -9,36 +9,70 @@ import { Separator } from '@/components/ui/separator';
 import { Heart, ShoppingBag, ArrowLeft, Star, Truck, Shield, RotateCcw } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { useCartStore } from '@/stores/cartStore';
+import { getProductById } from '@/lib/mockData';
+import { useToast } from '@/hooks/use-toast';
 import productBlack from '@/assets/product-black-bag.jpg';
 import productWhite from '@/assets/product-white-bag.jpg';
 import productRose from '@/assets/product-rose-bag.jpg';
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { addItem } = useCartStore();
   const [selectedImage, setSelectedImage] = useState(0);
   const [customName, setCustomName] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedHandle, setSelectedHandle] = useState('');
   const [quantity, setQuantity] = useState(1);
 
-  // Mock product data - in real app, fetch based on id
-  const product = {
+  // Get product data
+  const product = getProductById(id || '1') || {
     id: '1',
     name: 'Midnight Elegance',
     price: 129,
     originalPrice: 159,
     images: [productBlack, productWhite, productRose],
     description: 'Handcrafted with premium beads and elegant finishing, this bag represents the perfect blend of traditional craftsmanship and modern design. Each piece is meticulously created by skilled artisans.',
-    features: ['Handmade with premium beads', 'Customizable with your name', 'Choice of handle types', 'Elegant gift packaging'],
     colors: ['Black', 'White', 'Rose Gold'],
     handles: ['Pearl Chain', 'Gold Chain', 'Ribbon Drawstring'],
     inStock: true,
-    estimatedDelivery: '3-5 business days'
+    stockQuantity: 15,
+    categoryId: 'evening',
+    features: ['Handmade with premium beads', 'Customizable with your name', 'Choice of handle types', 'Elegant gift packaging']
   };
 
   const handleAddToCart = () => {
-    // Add to cart logic
-    console.log('Added to cart:', { id, customName, selectedColor, selectedHandle, quantity });
+    if (!selectedColor || !selectedHandle) {
+      toast({
+        title: "Missing Selection",
+        description: "Please select color and handle type before adding to cart.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const cartItem = {
+      productId: id || '1',
+      quantity,
+      customName: customName || undefined,
+      selectedColor,
+      selectedHandle
+    };
+    
+    addItem(cartItem);
+    toast({
+      title: "Added to Cart",
+      description: `${product.name} has been added to your cart.`,
+    });
+  };
+
+  const handleBuyNow = () => {
+    handleAddToCart();
+    if (selectedColor && selectedHandle) {
+      navigate('/cart');
+    }
   };
 
   return (
@@ -193,11 +227,14 @@ const ProductDetail = () => {
                 </Button>
               </div>
               
-              <Link to="/cart">
-                <Button variant="boutique" size="lg" className="w-full">
-                  Buy Now
-                </Button>
-              </Link>
+              <Button 
+                variant="boutique" 
+                size="lg" 
+                className="w-full"
+                onClick={handleBuyNow}
+              >
+                Buy Now
+              </Button>
             </div>
 
             {/* Features */}
