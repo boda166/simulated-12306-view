@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,7 @@ import { Heart, ShoppingBag, ArrowLeft, Star, Truck, Shield, RotateCcw } from 'l
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCartStore } from '@/stores/cartStore';
-import { getProductById } from '@/lib/mockData';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import productBlack from '@/assets/product-black-bag.jpg';
 import productWhite from '@/assets/product-white-bag.jpg';
@@ -26,21 +26,60 @@ const ProductDetail = () => {
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedHandle, setSelectedHandle] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [product, setProduct] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Get product data
-  const product = getProductById(id || '1') || {
-    id: '1',
-    name: 'Midnight Elegance',
-    price: 129,
-    originalPrice: 159,
-    images: [productBlack, productWhite, productRose],
-    description: 'Handcrafted with premium beads and elegant finishing, this bag represents the perfect blend of traditional craftsmanship and modern design. Each piece is meticulously created by skilled artisans.',
-    colors: ['Black', 'White', 'Rose Gold'],
-    handles: ['Pearl Chain', 'Gold Chain', 'Ribbon Drawstring'],
-    inStock: true,
-    stockQuantity: 15,
-    categoryId: 'evening',
-    features: ['Handmade with premium beads', 'Customizable with your name', 'Choice of handle types', 'Elegant gift packaging']
+  useEffect(() => {
+    fetchProduct();
+  }, [id]);
+
+  const fetchProduct = async () => {
+    if (!id) return;
+    
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setProduct({
+          id: data.id,
+          name: data.name,
+          price: Number(data.price),
+          originalPrice: data.original_price ? Number(data.original_price) : undefined,
+          images: data.images || [data.image_url || productBlack],
+          description: data.description || 'Handcrafted with premium beads and elegant finishing.',
+          colors: data.colors || ['Black', 'White', 'Rose Gold'],
+          handles: data.handle_types || ['Pearl Chain', 'Gold Chain', 'Ribbon Drawstring'],
+          inStock: data.in_stock ?? true,
+          categoryId: 'handbag',
+          features: ['Handmade with premium beads', 'Customizable with your name', 'Choice of handle types', 'Elegant gift packaging']
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      // Fallback to default product
+      setProduct({
+        id: id || '1',
+        name: 'Midnight Elegance',
+        price: 129,
+        originalPrice: 159,
+        images: [productBlack, productWhite, productRose],
+        description: 'Handcrafted with premium beads and elegant finishing, this bag represents the perfect blend of traditional craftsmanship and modern design.',
+        colors: ['Black', 'White', 'Rose Gold'],
+        handles: ['Pearl Chain', 'Gold Chain', 'Ribbon Drawstring'],
+        inStock: true,
+        categoryId: 'evening',
+        features: ['Handmade with premium beads', 'Customizable with your name', 'Choice of handle types', 'Elegant gift packaging']
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleAddToCart = () => {
@@ -54,7 +93,10 @@ const ProductDetail = () => {
     }
     
     const cartItem = {
-      productId: id || '1',
+      productId: product.id,
+      productName: product.name,
+      productPrice: product.price,
+      productImage: product.images[0],
       quantity,
       customName: customName || undefined,
       selectedColor,
@@ -74,6 +116,50 @@ const ProductDetail = () => {
       navigate('/cart');
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-muted rounded mb-8 w-1/3"></div>
+            <div className="grid lg:grid-cols-2 gap-12">
+              <div className="space-y-4">
+                <div className="aspect-square bg-muted rounded-2xl"></div>
+                <div className="flex gap-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="w-20 h-20 bg-muted rounded-lg"></div>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div className="h-8 bg-muted rounded w-2/3"></div>
+                <div className="h-6 bg-muted rounded w-1/3"></div>
+                <div className="h-20 bg-muted rounded"></div>
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
+            <Button onClick={() => navigate('/')}>Return Home</Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

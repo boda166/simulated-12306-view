@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,12 +9,11 @@ import { ArrowLeft, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { authAPI } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { setUser } = useAuthStore();
+  const { user, isAuthenticated, signIn, signUp } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({
@@ -28,23 +27,29 @@ const Auth = () => {
     confirmPassword: ''
   });
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      navigate('/');
+    }
+  }, [isAuthenticated, user, navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
-      const response = await authAPI.login(loginData.email, loginData.password);
-      setUser(response.user);
-      toast.success('Welcome back!');
+      const { error } = await signIn(loginData.email, loginData.password);
       
-      // Redirect admin users to admin dashboard, regular users to home
-      if (response.user.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
+      if (error) {
+        toast.error(error.message || 'Login failed');
+        return;
       }
+      
+      toast.success('Welcome back!');
+      navigate('/');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Login failed');
+      toast.error('An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -58,19 +63,29 @@ const Auth = () => {
       return;
     }
 
+    if (registerData.password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
     setIsLoading(true);
     
     try {
-      const response = await authAPI.register({
-        name: registerData.name,
-        email: registerData.email,
-        password: registerData.password
-      });
-      setUser(response.user);
-      toast.success('Account created successfully!');
-      navigate('/');
+      const { error } = await signUp(registerData.email, registerData.password, registerData.name);
+      
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast.error('An account with this email already exists');
+        } else {
+          toast.error(error.message || 'Registration failed');
+        }
+        return;
+      }
+      
+      toast.success('Account created successfully! Please check your email to confirm your account.');
+      // Don't navigate immediately - user needs to confirm email
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Registration failed');
+      toast.error('An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -202,11 +217,12 @@ const Auth = () => {
                         <Input
                           id="register-password"
                           type={showPassword ? "text" : "password"}
-                          placeholder="Create a password"
+                          placeholder="Create a password (min 6 characters)"
                           className="pl-10 pr-10"
                           value={registerData.password}
                           onChange={(e) => setRegisterData(prev => ({ ...prev, password: e.target.value }))}
                           required
+                          minLength={6}
                         />
                         <button
                           type="button"

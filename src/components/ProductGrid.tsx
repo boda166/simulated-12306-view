@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Grid, List, Filter, SlidersHorizontal } from "lucide-react";
 import ProductCard from "./ProductCard";
 import { Product } from "@/lib/api";
-import { getAllProducts } from "@/lib/mockData";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const ProductGrid = () => {
@@ -23,9 +23,30 @@ const ProductGrid = () => {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      // Use mock data for now
-      const data = getAllProducts();
-      setProducts(data);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform data to match expected format
+      const transformedProducts: Product[] = (data || []).map(product => ({
+        id: product.id,
+        name: product.name,
+        price: Number(product.price),
+        originalPrice: product.original_price ? Number(product.original_price) : undefined,
+        images: product.images || [product.image_url || '/placeholder.svg'],
+        description: product.description || '',
+        colors: product.colors || [],
+        handles: product.handle_types || [],
+        inStock: product.in_stock ?? true,
+        stockQuantity: 10, // Default stock
+        categoryId: 'handbag', // Default category
+        features: []
+      }));
+
+      setProducts(transformedProducts);
     } catch (error) {
       console.error('Error loading products:', error);
       toast.error('Error loading products');

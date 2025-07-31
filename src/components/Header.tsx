@@ -12,17 +12,16 @@ import { toast } from "sonner";
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, isAuthenticated, clearUser, initializeAuth } = useAuthStore();
+  const { user, isAuthenticated, signOut, initializeAuth } = useAuthStore();
   const { totalItems } = useCartStore();
 
   useEffect(() => {
-    // Initialize auth on component mount
+    // Initialize auth and sync cart when component mounts
     initializeAuth();
   }, [initializeAuth]);
 
-  const handleLogout = () => {
-    authAPI.logout();
-    clearUser();
+  const handleLogout = async () => {
+    await signOut();
     toast.success('Logged out successfully');
     navigate('/');
   };
@@ -77,15 +76,26 @@ const Header = () => {
                 </Link>
               )
             ))}
-            {/* Admin link - only show for admin users */}
-            {isAuthenticated && user?.role === 'admin' && (
-              <Link
-                to="/admin"
-                className="text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200 relative group"
-              >
-                Admin
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-gold transition-all duration-300 group-hover:w-full"></span>
-              </Link>
+            {/* Account and Admin links */}
+            {isAuthenticated && (
+              <>
+                <Link
+                  to="/account"
+                  className="text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200 relative group"
+                >
+                  Account
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-gold transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+                {user?.user_metadata?.role === 'admin' && (
+                  <Link
+                    to="/admin"
+                    className="text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200 relative group"
+                  >
+                    Admin
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-gold transition-all duration-300 group-hover:w-full"></span>
+                  </Link>
+                )}
+              </>
             )}
           </nav>
 
@@ -162,15 +172,26 @@ const Header = () => {
                   </Link>
                 )
               ))}
-              {/* Admin link in mobile menu - only for admin users */}
-              {isAuthenticated && user?.role === 'admin' && (
-                <Link
-                  to="/admin"
-                  className="block px-3 py-2 text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Admin
-                </Link>
+              {/* Account and Admin links in mobile menu */}
+              {isAuthenticated && (
+                <>
+                  <Link
+                    to="/account"
+                    className="block px-3 py-2 text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Account
+                  </Link>
+                  {user?.user_metadata?.role === 'admin' && (
+                    <Link
+                      to="/admin"
+                      className="block px-3 py-2 text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Admin
+                    </Link>
+                  )}
+                </>
               )}
               <div className="flex space-x-4 px-3 pt-4">
                 <Button variant="ghost" size="icon" className="hover:text-rose-gold">
