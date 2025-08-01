@@ -9,9 +9,12 @@ import { Separator } from '@/components/ui/separator';
 import { Heart, ShoppingBag, ArrowLeft, Star, Truck, Shield, RotateCcw } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
+import { useWishlistStore } from '@/stores/wishlistStore';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import productBlack from '@/assets/product-black-bag.jpg';
 import productWhite from '@/assets/product-white-bag.jpg';
 import productRose from '@/assets/product-rose-bag.jpg';
@@ -19,8 +22,10 @@ import productRose from '@/assets/product-rose-bag.jpg';
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { isAuthenticated } = useAuthStore();
   const { addItem } = useCartStore();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
+  const { toast: uiToast } = useToast();
   const [selectedImage, setSelectedImage] = useState(0);
   const [customName, setCustomName] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
@@ -82,9 +87,15 @@ const ProductDetail = () => {
     }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please log in to add items to cart');
+      navigate('/auth');
+      return;
+    }
+
     if (!selectedColor || !selectedHandle) {
-      toast({
+      uiToast({
         title: "Missing Selection",
         description: "Please select color and handle type before adding to cart.",
         variant: "destructive",
@@ -92,22 +103,49 @@ const ProductDetail = () => {
       return;
     }
     
-    const cartItem = {
-      productId: product.id,
-      productName: product.name,
-      productPrice: product.price,
-      productImage: product.images[0],
-      quantity,
-      customName: customName || undefined,
-      selectedColor,
-      selectedHandle
-    };
-    
-    addItem(cartItem);
-    toast({
-      title: "Added to Cart",
-      description: `${product.name} has been added to your cart.`,
-    });
+    try {
+      await addItem({
+        productId: product.id,
+        productName: product.name,
+        productPrice: product.price,
+        productImage: product.images[0],
+        quantity,
+        customName: customName || undefined,
+        selectedColor,
+        selectedHandle
+      });
+      
+      uiToast({
+        title: "Added to Cart",
+        description: `${product.name} has been added to your cart.`,
+      });
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast.error('Failed to add item to cart');
+    }
+  };
+
+  const handleWishlistToggle = async () => {
+    if (!product) return;
+
+    if (!isAuthenticated) {
+      toast.error('Please log in to manage your wishlist');
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      if (isInWishlist(product.id)) {
+        await removeFromWishlist(product.id);
+        toast.success('Removed from wishlist');
+      } else {
+        await addToWishlist(product.id);
+        toast.success('Added to wishlist');
+      }
+    } catch (error) {
+      console.error('Error updating wishlist:', error);
+      toast.error('Failed to update wishlist');
+    }
   };
 
   const handleBuyNow = () => {
@@ -308,8 +346,13 @@ const ProductDetail = () => {
                   <ShoppingBag className="w-5 h-5 mr-2" />
                   Add to Cart
                 </Button>
-                <Button variant="outline" size="lg" className="px-4">
-                  <Heart className="w-5 h-5" />
+                <Button 
+                  variant={isInWishlist(product.id) ? "default" : "outline"} 
+                  size="lg" 
+                  className="px-4"
+                  onClick={handleWishlistToggle}
+                >
+                  <Heart className={`w-5 h-5 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
                 </Button>
               </div>
               

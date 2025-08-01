@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,9 +10,17 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, CreditCard, Truck } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cartStore';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Checkout = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuthStore();
+  const { items: cartItems, clearCart } = useCartStore();
   const [paymentMethod, setPaymentMethod] = useState('card');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -24,10 +32,24 @@ const Checkout = () => {
     notes: ''
   });
 
-  const orderItems = [
-    { name: 'Midnight Elegance', price: 129, quantity: 1, customName: 'Sarah' },
-    { name: 'Pearl Dreams', price: 149, quantity: 2 }
-  ];
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/auth');
+      return;
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Get order items from cart
+  const orderItems = cartItems.map(item => ({
+    id: item.productId,
+    name: item.productName,
+    price: item.productPrice,
+    quantity: item.quantity,
+    customName: item.customName,
+    selectedColor: item.selectedColor,
+    selectedHandle: item.selectedHandle,
+  }));
 
   const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const shipping = 0; // Free shipping
@@ -37,19 +59,85 @@ const Checkout = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isAuthenticated || !user) {
+      toast.error('You must be logged in to place an order');
+      navigate('/auth');
+      return;
+    }
+
+    if (orderItems.length === 0) {
+      toast.error('Your cart is empty');
+      navigate('/cart');
+      return;
+    }
     
     // Validate required fields
     if (!formData.email || !formData.firstName || !formData.lastName || 
         !formData.phone || !formData.address || !formData.city || !formData.postalCode) {
-      alert('Please fill in all required fields.');
+      toast.error('Please fill in all required fields.');
       return;
     }
     
-    // Handle order submission
-    console.log('Order submitted:', { formData, paymentMethod, orderItems });
-    alert(`Order submitted successfully! Total: $${total.toFixed(2)}`);
+    setIsSubmitting(true);
+    
+    try {
+      // Create order in database
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: user.id,
+          total_amount: total,
+          payment_method: paymentMethod,
+          status: 'pending',
+          contact_info: {
+            email: formData.email,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            phone: formData.phone,
+          },
+          shipping_address: {
+            address: formData.address,
+            city: formData.city,
+            postalCode: formData.postalCode,
+            notes: formData.notes,
+          },
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Create order items
+      const orderItemsData = orderItems.map(item => ({
+        order_id: order.id,
+        product_id: item.id,
+        quantity: item.quantity,
+        price: item.price,
+        selected_color: item.selectedColor,
+        selected_handle: item.selectedHandle,
+        custom_name: item.customName,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItemsData);
+
+      if (itemsError) throw itemsError;
+
+      // Clear cart after successful order
+      await clearCart();
+      
+      toast.success('Order placed successfully!');
+      navigate('/account'); // Redirect to account page to view orders
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      toast.error('Failed to place order. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -259,8 +347,14 @@ const Checkout = () => {
                     <span>${total.toFixed(2)}</span>
                   </div>
 
-                  <Button type="submit" variant="hero" size="lg" className="w-full mt-6">
-                    Complete Order
+                  <Button 
+                    type="submit" 
+                    variant="hero" 
+                    size="lg" 
+                    className="w-full mt-6"
+                    disabled={isSubmitting || orderItems.length === 0}
+                  >
+                    {isSubmitting ? 'Processing...' : 'Complete Order'}
                   </Button>
 
                   <p className="text-xs text-muted-foreground text-center mt-4">

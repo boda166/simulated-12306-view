@@ -6,19 +6,26 @@ import { ShoppingBag, Menu, X, Search, Heart, User, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import { useCartStore } from "@/stores/cartStore";
+import { useWishlistStore } from "@/stores/wishlistStore";
+import { SearchDialog } from "./SearchDialog";
 import { authAPI } from "@/lib/api";
 import { toast } from "sonner";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const navigate = useNavigate();
   const { user, isAuthenticated, signOut, initializeAuth } = useAuthStore();
-  const { totalItems } = useCartStore();
+  const { totalItems, syncWithDatabase } = useCartStore();
+  const { syncWithDatabase: syncWishlist } = useWishlistStore();
 
   useEffect(() => {
-    // Initialize auth and sync cart when component mounts
     initializeAuth();
-  }, [initializeAuth]);
+    if (isAuthenticated) {
+      syncWithDatabase();
+      syncWishlist();
+    }
+  }, [initializeAuth, isAuthenticated, syncWithDatabase, syncWishlist]);
 
   const handleLogout = async () => {
     await signOut();
@@ -101,10 +108,20 @@ const Header = () => {
 
           {/* Right side icons */}
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="hidden sm:flex hover:text-rose-gold">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="hidden sm:flex hover:text-rose-gold"
+              onClick={() => isAuthenticated ? setIsSearchOpen(true) : navigate('/auth')}
+            >
               <Search className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="hidden sm:flex hover:text-rose-gold">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="hidden sm:flex hover:text-rose-gold"
+              onClick={() => isAuthenticated ? navigate('/wishlist') : navigate('/auth')}
+            >
               <Heart className="h-5 w-5" />
             </Button>
             <Button 
@@ -194,10 +211,34 @@ const Header = () => {
                 </>
               )}
               <div className="flex space-x-4 px-3 pt-4">
-                <Button variant="ghost" size="icon" className="hover:text-rose-gold">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="hover:text-rose-gold"
+                  onClick={() => {
+                    if (isAuthenticated) {
+                      setIsSearchOpen(true);
+                      setIsMenuOpen(false);
+                    } else {
+                      navigate('/auth');
+                    }
+                  }}
+                >
                   <Search className="h-5 w-5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="hover:text-rose-gold">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="hover:text-rose-gold"
+                  onClick={() => {
+                    if (isAuthenticated) {
+                      navigate('/wishlist');
+                      setIsMenuOpen(false);
+                    } else {
+                      navigate('/auth');
+                    }
+                  }}
+                >
                   <Heart className="h-5 w-5" />
                 </Button>
                 <Button 
@@ -213,6 +254,8 @@ const Header = () => {
           </div>
         )}
       </div>
+      
+      <SearchDialog open={isSearchOpen} onOpenChange={setIsSearchOpen} />
     </header>
   );
 };
