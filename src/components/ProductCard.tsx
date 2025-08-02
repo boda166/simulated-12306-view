@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Heart, ShoppingBag, Eye, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCartStore } from "@/stores/cartStore";
+import { useWishlistStore } from "@/stores/wishlistStore";
+import { useAuthStore } from "@/stores/authStore";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProductCardProps {
   id: string;
@@ -33,19 +37,84 @@ const ProductCard = ({
   customizable = true,
   className,
 }: ProductCardProps) => {
-  const [isLiked, setIsLiked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuthStore();
+  const { addItem } = useCartStore();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
+  
+  const isLiked = isInWishlist(id);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Add to cart logic here
-    console.log(`Added ${name} to cart`);
+    
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to add items to your cart.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    try {
+      await addItem({
+        productId: id,
+        productName: name,
+        productPrice: price,
+        productImage: image,
+        quantity: 1,
+      });
+      
+      toast({
+        title: "Added to Cart",
+        description: `${name} has been added to your cart.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add item to cart. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleToggleLike = (e: React.MouseEvent) => {
+  const handleToggleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsLiked(!isLiked);
+    
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to manage your wishlist.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    try {
+      if (isLiked) {
+        await removeFromWishlist(id);
+        toast({
+          title: "Removed from Wishlist",
+          description: `${name} has been removed from your wishlist.`,
+        });
+      } else {
+        await addToWishlist(id);
+        toast({
+          title: "Added to Wishlist",
+          description: `${name} has been added to your wishlist.`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update wishlist. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleQuickView = (e: React.MouseEvent) => {
