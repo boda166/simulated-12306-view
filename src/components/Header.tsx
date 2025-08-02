@@ -15,7 +15,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, isAuthenticated, signOut, initializeAuth } = useAuthStore();
+  const { user, isAuthenticated, isAdmin, signOut, initializeAuth } = useAuthStore();
   const { totalItems, syncWithDatabase } = useCartStore();
   const { syncWithDatabase: syncWishlist } = useWishlistStore();
 
@@ -93,7 +93,7 @@ const Header = () => {
                   Account
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-gold transition-all duration-300 group-hover:w-full"></span>
                 </Link>
-                {user?.user_metadata?.role === 'admin' && (
+                {isAdmin && (
                   <Link
                     to="/admin"
                     className="text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200 relative group"
@@ -199,7 +199,7 @@ const Header = () => {
                   >
                     Account
                   </Link>
-                  {user?.user_metadata?.role === 'admin' && (
+                  {isAdmin && (
                     <Link
                       to="/admin"
                       className="block px-3 py-2 text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200"

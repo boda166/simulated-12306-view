@@ -6,11 +6,15 @@ import { User, Session } from '@supabase/supabase-js';
 interface AuthState {
   user: User | null;
   session: Session | null;
+  userProfile: any | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
   setUser: (user: User) => void;
   setSession: (session: Session | null) => void;
+  setUserProfile: (profile: any) => void;
   clearAuth: () => void;
+  fetchUserProfile: () => Promise<void>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -22,16 +26,54 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       session: null,
+      userProfile: null,
       isAuthenticated: false,
+      isAdmin: false,
       isLoading: true,
 
       setUser: (user: User) => set({ user, isAuthenticated: !!user }),
-      setSession: (session: Session | null) => set({ 
-        session, 
-        user: session?.user || null, 
-        isAuthenticated: !!session?.user 
+      setSession: (session: Session | null) => {
+        set({ 
+          session, 
+          user: session?.user || null, 
+          isAuthenticated: !!session?.user 
+        });
+        
+        // Fetch user profile when session changes
+        if (session?.user) {
+          setTimeout(() => get().fetchUserProfile(), 0);
+        }
+      },
+      setUserProfile: (profile: any) => set({ 
+        userProfile: profile, 
+        isAdmin: profile?.role === 'admin' 
       }),
-      clearAuth: () => set({ user: null, session: null, isAuthenticated: false }),
+      clearAuth: () => set({ 
+        user: null, 
+        session: null, 
+        userProfile: null, 
+        isAuthenticated: false, 
+        isAdmin: false 
+      }),
+
+      fetchUserProfile: async () => {
+        const { user } = get();
+        if (!user) return;
+
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (profile) {
+            get().setUserProfile(profile);
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      },
 
       signUp: async (email: string, password: string, fullName?: string) => {
         const redirectUrl = `${window.location.origin}/`;

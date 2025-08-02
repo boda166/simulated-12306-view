@@ -22,9 +22,11 @@ import Footer from '@/components/Footer';
 import { toast } from 'sonner';
 import AdminProductForm from '@/components/AdminProductForm';
 import AdminOrderDetails from '@/components/AdminOrderDetails';
+import AdminCustomers from '@/components/AdminCustomers';
+import AdminAnalytics from '@/components/AdminAnalytics';
 
 const Admin = () => {
-  const { user, isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [stats, setStats] = useState({
@@ -39,7 +41,7 @@ const Admin = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   // Redirect if not admin
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!authLoading && (!isAuthenticated || !isAdmin)) {
     return <Navigate to="/auth" replace />;
   }
   useEffect(() => {
@@ -170,7 +172,7 @@ const Admin = () => {
     }
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -335,10 +337,7 @@ const Admin = () => {
                 <CardDescription>View and manage customer information</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8">
-                  <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Customer management features coming soon</p>
-                </div>
+                <AdminCustomers />
               </CardContent>
             </Card>
           </TabsContent>
@@ -350,10 +349,7 @@ const Admin = () => {
                 <CardDescription>Track your store performance</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8">
-                  <TrendingUp className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Analytics dashboard coming soon</p>
-                </div>
+                <AdminAnalytics />
               </CardContent>
             </Card>
           </TabsContent>
