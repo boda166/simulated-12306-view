@@ -66,13 +66,14 @@ const Admin = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
+  useEffect(() => {
+    fetchAdminData();
+  }, []);
+
   // Redirect if not admin
   if (!authLoading && (!isAuthenticated || !isAdmin)) {
     return <Navigate to="/auth" replace />;
   }
-  useEffect(() => {
-    fetchAdminData();
-  }, []);
 
   const fetchAdminData = async () => {
     try {
