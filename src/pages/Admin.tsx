@@ -16,7 +16,7 @@ import {
   TrendingUp 
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
-import { adminAPI, ordersAPI, productsAPI, Order, Product } from '@/lib/api';
+import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { toast } from 'sonner';
@@ -24,6 +24,32 @@ import AdminProductForm from '@/components/AdminProductForm';
 import AdminOrderDetails from '@/components/AdminOrderDetails';
 import AdminCustomers from '@/components/AdminCustomers';
 import AdminAnalytics from '@/components/AdminAnalytics';
+
+interface Order {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  shippingAddress: string;
+  totalAmount: number;
+  status: 'pending' | 'shipped' | 'delivered' | 'cancelled';
+  items: any[];
+  createdAt: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  description?: string;
+  images: string[];
+  categoryId: string;
+  inStock: boolean;
+  stockQuantity: number;
+  colors: string[];
+  handles: string[];
+  features: string[];
+}
 
 const Admin = () => {
   const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuthStore();
@@ -51,28 +77,82 @@ const Admin = () => {
   const fetchAdminData = async () => {
     try {
       setIsLoading(true);
-      const [ordersData, productsData, statsData] = await Promise.all([
-        ordersAPI.getAll(),
-        productsAPI.getAll(),
-        adminAPI.getStats()
-      ]);
       
-      setOrders(ordersData);
-      setProducts(productsData);
-      setStats(statsData);
+      // Fetch orders
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            *,
+            products (name, image_url)
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (ordersError) throw ordersError;
+
+      // Fetch products
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (productsError) throw productsError;
+
+      // Fetch customer count
+      const { count: customersCount, error: customersError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      if (customersError) throw customersError;
+
+      const transformedOrders = ordersData?.map(order => ({
+        id: order.id,
+        customerName: `${(order.contact_info as any)?.firstName || ''} ${(order.contact_info as any)?.lastName || ''}`.trim() || 'Unknown Customer',
+        customerEmail: (order.contact_info as any)?.email || 'No email',
+        customerPhone: (order.contact_info as any)?.phone || 'No phone',
+        shippingAddress: (order.shipping_address as any)?.address || 'No address',
+        totalAmount: Number(order.total_amount),
+        status: order.status as Order['status'],
+        items: order.order_items || [],
+        createdAt: order.created_at
+      })) || [];
+
+      const transformedProducts = productsData?.map(product => ({
+        id: product.id,
+        name: product.name,
+        price: Number(product.price),
+        description: product.description,
+        images: product.images || (product.image_url ? [product.image_url] : []),
+        categoryId: 'handbag',
+        inStock: product.in_stock ?? true,
+        stockQuantity: 10, // Default stock quantity
+        colors: product.colors || [],
+        handles: product.handle_types || [],
+        features: []
+      })) || [];
+
+      setOrders(transformedOrders);
+      setProducts(transformedProducts);
+      
+      // Calculate stats
+      const totalSales = transformedOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+      setStats({
+        totalSales,
+        totalOrders: transformedOrders.length,
+        totalProducts: transformedProducts.length,
+        totalCustomers: customersCount || 0
+      });
+
     } catch (error) {
-      toast.error('Using demo data - API unavailable');
       console.error('Error fetching admin data:', error);
-      // Fallback to mock data
-      setOrders([
-        { id: '1001', customerName: 'Sarah Johnson', customerEmail: 'sarah@example.com', customerPhone: '+1234567890', shippingAddress: '123 Main St', totalAmount: 129, status: 'pending', items: [], createdAt: '2024-01-15T10:00:00Z' },
-        { id: '1002', customerName: 'Emma Wilson', customerEmail: 'emma@example.com', customerPhone: '+1234567891', shippingAddress: '456 Oak Ave', totalAmount: 298, status: 'shipped', items: [], createdAt: '2024-01-14T15:30:00Z' }
-      ]);
-      setProducts([
-        { id: '1', name: 'Midnight Elegance', price: 129, description: 'Demo product', images: [], categoryId: 'evening', inStock: true, stockQuantity: 15, colors: ['Black'], handles: ['Chain'], features: [] },
-        { id: '2', name: 'Pearl Dreams', price: 149, description: 'Demo product', images: [], categoryId: 'classic', inStock: true, stockQuantity: 8, colors: ['White'], handles: ['Chain'], features: [] }
-      ]);
-      setStats({ totalSales: 12480, totalOrders: 156, totalProducts: 24, totalCustomers: 89 });
+      toast.error('Failed to load admin data');
+      
+      // Fallback to empty data
+      setOrders([]);
+      setProducts([]);
+      setStats({ totalSales: 0, totalOrders: 0, totalProducts: 0, totalCustomers: 0 });
     } finally {
       setIsLoading(false);
     }
@@ -80,18 +160,27 @@ const Admin = () => {
 
   const handleCreateProduct = async (productData: Omit<Product, 'id'>) => {
     try {
-      const newProduct = await productsAPI.create(productData);
-      setProducts(prev => [...prev, newProduct]);
+      const { error } = await supabase
+        .from('products')
+        .insert({
+          name: productData.name,
+          price: productData.price,
+          description: productData.description,
+          images: productData.images,
+          colors: productData.colors,
+          handle_types: productData.handles,
+          in_stock: productData.inStock,
+          featured: false
+        });
+
+      if (error) throw error;
+
+      toast.success('Product created successfully');
       setShowProductForm(false);
+      fetchAdminData();
     } catch (error) {
-      // Fallback for offline mode
-      const mockProduct: Product = {
-        ...productData,
-        id: 'product-' + Date.now(),
-      };
-      setProducts(prev => [...prev, mockProduct]);
-      setShowProductForm(false);
-      toast.success('Product created (offline mode)');
+      console.error('Error creating product:', error);
+      toast.error('Failed to create product');
     }
   };
 
@@ -99,40 +188,64 @@ const Admin = () => {
     if (!editingProduct) return;
     
     try {
-      const updatedProduct = await productsAPI.update(editingProduct.id, productData);
-      setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
+      const { error } = await supabase
+        .from('products')
+        .update({
+          name: productData.name,
+          price: productData.price,
+          description: productData.description,
+          images: productData.images,
+          colors: productData.colors,
+          handle_types: productData.handles,
+          in_stock: productData.inStock
+        })
+        .eq('id', editingProduct.id);
+
+      if (error) throw error;
+
+      toast.success('Product updated successfully');
       setEditingProduct(null);
       setShowProductForm(false);
+      fetchAdminData();
     } catch (error) {
-      // Fallback for offline mode
-      const mockProduct: Product = { ...productData, id: editingProduct.id };
-      setProducts(prev => prev.map(p => p.id === editingProduct.id ? mockProduct : p));
-      setEditingProduct(null);
-      setShowProductForm(false);
-      toast.success('Product updated (offline mode)');
+      console.error('Error updating product:', error);
+      toast.error('Failed to update product');
     }
   };
 
   const handleDeleteProduct = async (productId: string) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+
     try {
-      await productsAPI.delete(productId);
-      setProducts(prev => prev.filter(p => p.id !== productId));
-      toast.success('Product deleted');
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+
+      if (error) throw error;
+
+      toast.success('Product deleted successfully');
+      fetchAdminData();
     } catch (error) {
-      // Fallback for offline mode
-      setProducts(prev => prev.filter(p => p.id !== productId));
-      toast.success('Product deleted (offline mode)');
+      console.error('Error deleting product:', error);
+      toast.error('Failed to delete product');
     }
   };
 
   const handleUpdateOrderStatus = async (orderId: string, status: Order['status']) => {
     try {
-      await ordersAPI.updateStatus(orderId, status);
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+      const { error } = await supabase
+        .from('orders')
+        .update({ status })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      toast.success('Order status updated successfully');
+      fetchAdminData();
     } catch (error) {
-      // Fallback for offline mode
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
-      toast.success('Order status updated (offline mode)');
+      console.error('Error updating order status:', error);
+      toast.error('Failed to update order status');
     }
   };
 
@@ -359,7 +472,7 @@ const Admin = () => {
         {showProductForm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <AdminProductForm
-              product={editingProduct}
+              product={editingProduct as any}
               onSave={editingProduct ? handleUpdateProduct : handleCreateProduct}
               onCancel={() => {
                 setShowProductForm(false);
@@ -372,7 +485,7 @@ const Admin = () => {
         {/* Admin Order Details Modal */}
         {selectedOrder && (
           <AdminOrderDetails
-            order={selectedOrder}
+            order={selectedOrder as any}
             onUpdateStatus={handleUpdateOrderStatus}
             onClose={() => setSelectedOrder(null)}
           />

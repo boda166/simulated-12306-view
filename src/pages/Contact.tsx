@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { MapPin, Phone, Mail, Clock, MessageCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
@@ -16,13 +17,20 @@ const Contact = () => {
     message: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Contact form submitted:', formData);
     
-    // Simulate form submission
-    alert('Thank you for your message! We\'ll get back to you soon.');
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    try {
+      // Here you could send to an API endpoint or email service
+      console.log('Contact form submitted:', formData);
+      
+      // For now, simulate success
+      toast.success('Thank you for your message! We\'ll get back to you soon.');
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast.error('Failed to send message. Please try again.');
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -116,7 +124,10 @@ const Contact = () => {
                     <Button 
                       variant="boutique" 
                       size="sm"
-                      onClick={() => window.open('https://wa.me/15551234567', '_blank')}
+                      onClick={() => {
+                        const message = encodeURIComponent('Hello! I\'m interested in your handcrafted beaded bags.');
+                        window.open(`https://wa.me/15551234567?text=${message}`, '_blank');
+                      }}
                     >
                       Chat on WhatsApp
                     </Button>

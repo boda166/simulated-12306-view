@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAuthStore } from '@/stores/authStore';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -30,7 +31,27 @@ const Auth = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      navigate('/');
+      // Check if user is admin and redirect accordingly
+      const checkAdminStatus = async () => {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile?.role === 'admin') {
+            navigate('/admin');
+          } else {
+            navigate('/');
+          }
+        } catch (error) {
+          console.error('Error checking admin status:', error);
+          navigate('/');
+        }
+      };
+      
+      checkAdminStatus();
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -47,7 +68,7 @@ const Auth = () => {
       }
       
       toast.success('Welcome back!');
-      navigate('/');
+      // Admin status will be checked by the useEffect after signin
     } catch (error) {
       toast.error('An unexpected error occurred');
     } finally {
