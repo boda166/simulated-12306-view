@@ -354,8 +354,8 @@ const Admin = () => {
                     orders.map((order) => (
                       <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="space-y-1">
-                          <p className="font-medium">#{order.id}</p>
-                          <p className="text-sm text-muted-foreground">{order.customerName}</p>
+                           <p className="font-medium">#{order.id.slice(0, 8)}</p>
+                           <p className="text-sm text-muted-foreground">{order.customerName}</p>
                           <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right">
@@ -405,14 +405,21 @@ const Admin = () => {
                     <p className="text-center text-muted-foreground py-8">No products found</p>
                   ) : (
                     products.map((product) => (
-                      <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="space-y-1">
-                          <p className="font-medium">{product.name}</p>
-                          <p className="text-sm text-muted-foreground">Stock: {product.stockQuantity}</p>
-                          <p className="text-xs text-muted-foreground">Category: {product.categoryId}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">${product.price}</p>
+                       <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
+                         <div className="flex items-center gap-4">
+                           <img
+                             src={product.images[0] || '/placeholder.svg'}
+                             alt={product.name}
+                             className="w-16 h-16 object-cover rounded-lg"
+                           />
+                           <div className="space-y-1">
+                             <p className="font-medium">{product.name}</p>
+                             <p className="text-sm text-muted-foreground">Colors: {product.colors.join(', ') || 'N/A'}</p>
+                             <p className="text-xs text-muted-foreground">Handles: {product.handles.join(', ') || 'N/A'}</p>
+                           </div>
+                         </div>
+                         <div className="text-right">
+                           <p className="font-medium">${product.price.toFixed(2)}</p>
                           <Badge variant={product.inStock ? 'default' : 'destructive'}>
                             {product.inStock ? 'In Stock' : 'Out of Stock'}
                           </Badge>
