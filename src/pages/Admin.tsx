@@ -66,11 +66,6 @@ const Admin = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  // Redirect if not admin
-  if (!authLoading && (!isAuthenticated || !isAdmin)) {
-    return <Navigate to="/auth" replace />;
-  }
-
   const fetchAdminData = async () => {
     try {
       setIsLoading(true);
@@ -158,6 +153,11 @@ const Admin = () => {
   useEffect(() => {
     fetchAdminData();
   }, []);
+
+  // Redirect if not admin - after all hooks are called
+  if (!authLoading && (!isAuthenticated || !isAdmin)) {
+    return <Navigate to="/auth" replace />;
+  }
 
   const handleCreateProduct = async (productData: Omit<Product, 'id'>) => {
     try {
