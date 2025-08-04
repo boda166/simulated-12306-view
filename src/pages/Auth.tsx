@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, signIn, signUp } = useAuthStore();
+  const { user, isAuthenticated, isAdmin, userProfile, signIn, signUp } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({
@@ -28,32 +28,17 @@ const Auth = () => {
     confirmPassword: ''
   });
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated and profile is loaded
   useEffect(() => {
-    if (isAuthenticated && user) {
-      // Check if user is admin and redirect accordingly
-      const checkAdminStatus = async () => {
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-          
-          if (profile?.role === 'admin') {
-            navigate('/admin');
-          } else {
-            navigate('/');
-          }
-        } catch (error) {
-          console.error('Error checking admin status:', error);
-          navigate('/');
-        }
-      };
-      
-      checkAdminStatus();
+    if (isAuthenticated && user && userProfile) {
+      // Use the isAdmin flag from the store
+      if (isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, userProfile, isAdmin, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

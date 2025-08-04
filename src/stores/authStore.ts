@@ -115,6 +115,14 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: !!session?.user,
             isLoading: false
           });
+          
+          // Fetch user profile when session changes
+          if (session?.user) {
+            setTimeout(() => get().fetchUserProfile(), 0);
+          } else {
+            // Clear profile when user logs out
+            set({ userProfile: null, isAdmin: false });
+          }
         });
 
         // Get initial session
@@ -125,6 +133,11 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: !!session?.user,
           isLoading: false
         });
+        
+        // Fetch user profile for initial session
+        if (session?.user) {
+          await get().fetchUserProfile();
+        }
       },
     }),
     {
