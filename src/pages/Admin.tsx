@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   DollarSign, 
   Package, 
@@ -13,7 +15,16 @@ import {
   Edit, 
   Trash2, 
   Plus,
-  TrendingUp 
+  TrendingUp,
+  Search,
+  Filter,
+  Download,
+  RefreshCw,
+  Calendar,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  XCircle
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,15 +43,17 @@ interface Order {
   customerPhone: string;
   shippingAddress: string;
   totalAmount: number;
-  status: 'pending' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   items: any[];
   createdAt: string;
+  paymentMethod?: string;
 }
 
 interface Product {
   id: string;
   name: string;
   price: number;
+  originalPrice?: number;
   description?: string;
   images: string[];
   categoryId: string;
@@ -49,42 +62,74 @@ interface Product {
   colors: string[];
   handles: string[];
   features: string[];
+  featured?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface AdminStats {
+  totalSales: number;
+  totalOrders: number;
+  totalProducts: number;
+  totalCustomers: number;
+  monthlyOrders: number;
+  monthlyRevenue: number;
+  lowStockProducts: number;
+  pendingOrders: number;
 }
 
 const Admin = () => {
   const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [stats, setStats] = useState({
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [stats, setStats] = useState<AdminStats>({
     totalSales: 0,
     totalOrders: 0,
     totalProducts: 0,
     totalCustomers: 0,
+    monthlyOrders: 0,
+    monthlyRevenue: 0,
+    lowStockProducts: 0,
+    pendingOrders: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  
+  // Search and Filter States
+  const [orderSearch, setOrderSearch] = useState('');
+  const [productSearch, setProductSearch] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
+  const [productStockFilter, setProductStockFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState('overview');
 
-  const fetchAdminData = async () => {
+  const fetchAdminData = async (showRefreshToast = false) => {
     try {
-      setIsLoading(true);
+      if (showRefreshToast) {
+        setRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
       
-      // Fetch orders
+      // Fetch orders with better error handling
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(`
           *,
           order_items (
             *,
-            products (name, image_url)
+            products (name, image_url, images)
           )
         `)
         .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;
 
-      // Fetch products
+      // Fetch products with stock information
       const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select('*')
@@ -92,7 +137,7 @@ const Admin = () => {
 
       if (productsError) throw productsError;
 
-      // Fetch customer count
+      // Fetch customer count and recent registrations
       const { count: customersCount, error: customersError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true });
@@ -108,35 +153,53 @@ const Admin = () => {
         totalAmount: Number(order.total_amount),
         status: order.status as Order['status'],
         items: order.order_items || [],
-        createdAt: order.created_at
+        createdAt: order.created_at,
+        paymentMethod: order.payment_method || 'Unknown'
       })) || [];
 
       const transformedProducts = productsData?.map(product => ({
         id: product.id,
         name: product.name,
         price: Number(product.price),
+        originalPrice: product.original_price ? Number(product.original_price) : undefined,
         description: product.description,
         images: product.images || (product.image_url ? [product.image_url] : []),
         categoryId: 'handbag',
         inStock: product.in_stock ?? true,
-        stockQuantity: 10, // Default stock quantity
+        stockQuantity: 10, // Default stock quantity - could be enhanced with real inventory
         colors: product.colors || [],
         handles: product.handle_types || [],
-        features: []
+        features: [],
+        featured: product.featured ?? false,
+        createdAt: product.created_at,
+        updatedAt: product.updated_at
       })) || [];
 
       setOrders(transformedOrders);
       setProducts(transformedProducts);
+      setFilteredOrders(transformedOrders);
+      setFilteredProducts(transformedProducts);
       
-      // Calculate stats
+      // Calculate enhanced stats
       const totalSales = transformedOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+      const thisMonthOrders = transformedOrders.filter(order => 
+        new Date(order.createdAt).getMonth() === new Date().getMonth()
+      );
+      
       setStats({
         totalSales,
         totalOrders: transformedOrders.length,
         totalProducts: transformedProducts.length,
-        totalCustomers: customersCount || 0
+        totalCustomers: customersCount || 0,
+        monthlyOrders: thisMonthOrders.length,
+        monthlyRevenue: thisMonthOrders.reduce((sum, order) => sum + order.totalAmount, 0),
+        lowStockProducts: transformedProducts.filter(p => p.stockQuantity < 5).length,
+        pendingOrders: transformedOrders.filter(o => o.status === 'pending').length
       });
 
+      if (showRefreshToast) {
+        toast.success('Data refreshed successfully');
+      }
     } catch (error) {
       console.error('Error fetching admin data:', error);
       toast.error('Failed to load admin data');
@@ -144,15 +207,69 @@ const Admin = () => {
       // Fallback to empty data
       setOrders([]);
       setProducts([]);
-      setStats({ totalSales: 0, totalOrders: 0, totalProducts: 0, totalCustomers: 0 });
+      setFilteredOrders([]);
+      setFilteredProducts([]);
+      setStats({ 
+        totalSales: 0, 
+        totalOrders: 0, 
+        totalProducts: 0, 
+        totalCustomers: 0,
+        monthlyOrders: 0,
+        monthlyRevenue: 0,
+        lowStockProducts: 0,
+        pendingOrders: 0
+      });
     } finally {
       setIsLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchAdminData();
   }, []);
+
+  // Filter effects
+  useEffect(() => {
+    let filtered = orders;
+    
+    if (orderSearch) {
+      filtered = filtered.filter(order =>
+        order.customerName.toLowerCase().includes(orderSearch.toLowerCase()) ||
+        order.customerEmail.toLowerCase().includes(orderSearch.toLowerCase()) ||
+        order.id.toLowerCase().includes(orderSearch.toLowerCase())
+      );
+    }
+    
+    if (orderStatusFilter !== 'all') {
+      filtered = filtered.filter(order => order.status === orderStatusFilter);
+    }
+    
+    setFilteredOrders(filtered);
+  }, [orders, orderSearch, orderStatusFilter]);
+
+  useEffect(() => {
+    let filtered = products;
+    
+    if (productSearch) {
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+        product.description?.toLowerCase().includes(productSearch.toLowerCase())
+      );
+    }
+    
+    if (productStockFilter !== 'all') {
+      if (productStockFilter === 'in-stock') {
+        filtered = filtered.filter(product => product.inStock);
+      } else if (productStockFilter === 'out-of-stock') {
+        filtered = filtered.filter(product => !product.inStock);
+      } else if (productStockFilter === 'low-stock') {
+        filtered = filtered.filter(product => product.stockQuantity < 5);
+      }
+    }
+    
+    setFilteredProducts(filtered);
+  }, [products, productSearch, productStockFilter]);
 
   // Redirect if not admin - after all hooks are called
   if (!authLoading && (!isAuthenticated || !isAdmin)) {
@@ -255,34 +372,51 @@ const Admin = () => {
       title: 'Total Sales', 
       value: `$${stats.totalSales.toLocaleString()}`, 
       icon: DollarSign, 
-      trend: '+12%' 
+      trend: `$${stats.monthlyRevenue.toLocaleString()} this month`,
+      trendColor: 'text-green-600'
     },
     { 
-      title: 'Orders', 
+      title: 'Total Orders', 
       value: stats.totalOrders.toString(), 
       icon: ShoppingCart, 
-      trend: '+8%' 
+      trend: `${stats.monthlyOrders} this month`,
+      trendColor: 'text-blue-600'
     },
     { 
       title: 'Products', 
       value: stats.totalProducts.toString(), 
       icon: Package, 
-      trend: '+2%' 
+      trend: `${stats.lowStockProducts} low stock`,
+      trendColor: stats.lowStockProducts > 0 ? 'text-orange-600' : 'text-green-600'
     },
     { 
       title: 'Customers', 
       value: stats.totalCustomers.toString(), 
       icon: Users, 
-      trend: '+15%' 
+      trend: `${stats.pendingOrders} pending orders`,
+      trendColor: stats.pendingOrders > 0 ? 'text-red-600' : 'text-green-600'
     },
   ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'shipped': return 'bg-blue-100 text-blue-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-yellow-500/10 text-yellow-700 border-yellow-200';
+      case 'processing': return 'bg-blue-500/10 text-blue-700 border-blue-200';
+      case 'shipped': return 'bg-purple-500/10 text-purple-700 border-purple-200';
+      case 'delivered': return 'bg-green-500/10 text-green-700 border-green-200';
+      case 'cancelled': return 'bg-red-500/10 text-red-700 border-red-200';
+      default: return 'bg-gray-500/10 text-gray-700 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending': return Clock;
+      case 'processing': return RefreshCw;
+      case 'shipped': return Package;
+      case 'delivered': return CheckCircle;
+      case 'cancelled': return XCircle;
+      default: return AlertCircle;
     }
   };
 
@@ -305,8 +439,27 @@ const Admin = () => {
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-playfair font-bold text-deep-rose mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage your Luli Beads store</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-playfair font-bold text-deep-rose mb-2">Admin Dashboard</h1>
+              <p className="text-muted-foreground">Manage your Luli Beads store</p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => fetchAdminData(true)}
+                disabled={refreshing}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Stats Overview */}
@@ -321,10 +474,8 @@ const Admin = () => {
                   </div>
                   <stat.icon className="w-8 h-8 text-rose-gold" />
                 </div>
-                <div className="flex items-center mt-4">
-                  <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-sm text-green-500">{stat.trend}</span>
-                  <span className="text-sm text-muted-foreground ml-1">from last month</span>
+                  <div className="flex items-center mt-4">
+                  <span className={`text-sm ${stat.trendColor}`}>{stat.trend}</span>
                 </div>
               </CardContent>
             </Card>
@@ -332,49 +483,179 @@ const Admin = () => {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="products">Products</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="orders">Orders ({filteredOrders.length})</TabsTrigger>
+            <TabsTrigger value="products">Products ({filteredProducts.length})</TabsTrigger>
             <TabsTrigger value="customers">Customers</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="overview">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                  <CardDescription>Common administrative tasks</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Button 
+                    variant="hero" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      setEditingProduct(null);
+                      setShowProductForm(true);
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add New Product
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab('orders')}
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    View Pending Orders ({stats.pendingOrders})
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab('products')}
+                  >
+                    <Package className="w-4 h-4 mr-2" />
+                    Check Low Stock ({stats.lowStockProducts})
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab('customers')}
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Manage Customers
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Activity</CardTitle>
+                  <CardDescription>Latest system updates</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {orders.slice(0, 5).map((order) => (
+                      <div key={order.id} className="flex items-center space-x-3 text-sm">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <div className="flex-1">
+                          <p>New order from {order.customerName}</p>
+                          <p className="text-muted-foreground text-xs">
+                            {new Date(order.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <Badge className={getStatusColor(order.status)}>
+                          {order.status}
+                        </Badge>
+                      </div>
+                    ))}
+                    {orders.length === 0 && (
+                      <p className="text-center text-muted-foreground py-4">No recent activity</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           <TabsContent value="orders">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Orders</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Orders Management</span>
+                  <Badge variant="secondary">{filteredOrders.length} orders</Badge>
+                </CardTitle>
                 <CardDescription>Manage and track customer orders</CardDescription>
+                
+                {/* Search and Filter Controls */}
+                <div className="flex flex-col sm:flex-row gap-4 mt-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search orders by customer, email, or order ID..."
+                      value={orderSearch}
+                      onChange={(e) => setOrderSearch(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-40">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="processing">Processing</SelectItem>
+                      <SelectItem value="shipped">Shipped</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {orders.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">No orders found</p>
+                  {filteredOrders.length === 0 ? (
+                    <div className="text-center py-12">
+                      <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        {orderSearch || orderStatusFilter !== 'all' ? 'No orders match your filters' : 'No orders found'}
+                      </p>
+                    </div>
                   ) : (
-                    orders.map((order) => (
-                      <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="space-y-1">
-                           <p className="font-medium">#{order.id.slice(0, 8)}</p>
-                           <p className="text-sm text-muted-foreground">{order.customerName}</p>
-                          <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
+                    filteredOrders.map((order) => {
+                      const StatusIcon = getStatusIcon(order.status);
+                      return (
+                        <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-10 h-10 bg-gradient-to-br from-rose-gold to-deep-rose rounded-full flex items-center justify-center text-white font-medium text-sm">
+                              #{order.id.slice(0, 4)}
+                            </div>
+                            <div className="space-y-1">
+                              <p className="font-medium">{order.customerName}</p>
+                              <p className="text-sm text-muted-foreground">{order.customerEmail}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(order.createdAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right space-y-1">
+                            <p className="font-medium">${order.totalAmount.toFixed(2)}</p>
+                            <Badge className={getStatusColor(order.status)}>
+                              <StatusIcon className="w-3 h-3 mr-1" />
+                              {order.status}
+                            </Badge>
+                            <p className="text-xs text-muted-foreground">{order.items.length} item(s)</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => setSelectedOrder(order)}
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">${order.totalAmount.toFixed(2)}</p>
-                          <Badge className={`${getStatusColor(order.status)} border-0`}>
-                            {order.status}
-                          </Badge>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            onClick={() => setSelectedOrder(order)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </CardContent>
@@ -385,8 +666,35 @@ const Admin = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Product Management</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    Product Management
+                    <Badge variant="secondary">{filteredProducts.length} products</Badge>
+                  </CardTitle>
                   <CardDescription>Manage your product catalog</CardDescription>
+                  
+                  {/* Search and Filter Controls */}
+                  <div className="flex flex-col sm:flex-row gap-4 mt-4">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search products by name or description..."
+                        value={productSearch}
+                        onChange={(e) => setProductSearch(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <Select value={productStockFilter} onValueChange={setProductStockFilter}>
+                      <SelectTrigger className="w-full sm:w-40">
+                        <SelectValue placeholder="Filter by stock" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Products</SelectItem>
+                        <SelectItem value="in-stock">In Stock</SelectItem>
+                        <SelectItem value="low-stock">Low Stock</SelectItem>
+                        <SelectItem value="out-of-stock">Out of Stock</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <Button 
                   variant="hero"
@@ -401,28 +709,70 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {products.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">No products found</p>
+                  {filteredProducts.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        {productSearch || productStockFilter !== 'all' ? 'No products match your filters' : 'No products found'}
+                      </p>
+                    </div>
                   ) : (
-                    products.map((product) => (
-                       <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    filteredProducts.map((product) => (
+                       <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                          <div className="flex items-center gap-4">
-                           <img
-                             src={product.images[0] || '/placeholder.svg'}
-                             alt={product.name}
-                             className="w-16 h-16 object-cover rounded-lg"
-                           />
+                           <div className="relative">
+                             <img
+                               src={product.images[0] || '/placeholder.svg'}
+                               alt={product.name}
+                               className="w-16 h-16 object-cover rounded-lg"
+                             />
+                             {product.featured && (
+                               <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
+                                 <div className="w-2 h-2 bg-white rounded-full"></div>
+                               </div>
+                             )}
+                           </div>
                            <div className="space-y-1">
-                             <p className="font-medium">{product.name}</p>
-                             <p className="text-sm text-muted-foreground">Colors: {product.colors.join(', ') || 'N/A'}</p>
-                             <p className="text-xs text-muted-foreground">Handles: {product.handles.join(', ') || 'N/A'}</p>
+                             <div className="flex items-center gap-2">
+                               <p className="font-medium">{product.name}</p>
+                               {product.featured && (
+                                 <Badge variant="secondary" className="text-xs">Featured</Badge>
+                               )}
+                             </div>
+                             <p className="text-sm text-muted-foreground">
+                               Colors: {product.colors.length > 0 ? product.colors.slice(0, 3).join(', ') : 'N/A'}
+                               {product.colors.length > 3 && ` +${product.colors.length - 3} more`}
+                             </p>
+                             <p className="text-xs text-muted-foreground">
+                               Handles: {product.handles.length > 0 ? product.handles.slice(0, 2).join(', ') : 'N/A'}
+                               {product.handles.length > 2 && ` +${product.handles.length - 2} more`}
+                             </p>
+                             <p className="text-xs text-muted-foreground">
+                               Stock: {product.stockQuantity} units
+                             </p>
                            </div>
                          </div>
-                         <div className="text-right">
-                           <p className="font-medium">${product.price.toFixed(2)}</p>
-                          <Badge variant={product.inStock ? 'default' : 'destructive'}>
-                            {product.inStock ? 'In Stock' : 'Out of Stock'}
+                         <div className="text-right space-y-1">
+                           <div className="flex items-center gap-2">
+                             <p className="font-medium">${product.price.toFixed(2)}</p>
+                             {product.originalPrice && product.originalPrice > product.price && (
+                               <p className="text-sm text-muted-foreground line-through">
+                                 ${product.originalPrice.toFixed(2)}
+                               </p>
+                             )}
+                           </div>
+                          <Badge variant={
+                            !product.inStock ? 'destructive' : 
+                            product.stockQuantity < 5 ? 'secondary' : 
+                            'default'
+                          }>
+                            {!product.inStock ? 'Out of Stock' : 
+                             product.stockQuantity < 5 ? `Low Stock (${product.stockQuantity})` : 
+                             'In Stock'}
                           </Badge>
+                           <p className="text-xs text-muted-foreground">
+                             Created: {product.createdAt ? new Date(product.createdAt).toLocaleDateString() : 'Unknown'}
+                           </p>
                         </div>
                         <div className="flex gap-2">
                           <Button 
@@ -432,6 +782,7 @@ const Admin = () => {
                               setEditingProduct(product);
                               setShowProductForm(true);
                             }}
+                            title="Edit Product"
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -439,6 +790,7 @@ const Admin = () => {
                             variant="outline" 
                             size="icon"
                             onClick={() => handleDeleteProduct(product.id)}
+                            title="Delete Product"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
