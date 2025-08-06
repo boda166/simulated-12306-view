@@ -10,7 +10,7 @@ import { Heart, ShoppingBag, ArrowLeft, Star, Truck, Shield, RotateCcw } from 'l
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAuthStore } from '@/stores/authStore';
-import { useCartStore } from '@/stores/cartStore';
+import { useCart } from '@/hooks/useCart';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import { useToast } from '@/hooks/use-toast';
 import { toast } from 'sonner';
@@ -21,7 +21,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
-  const { addItem } = useCartStore();
+  const { addItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
   const { toast: uiToast } = useToast();
   const { getProductById } = useProducts();
@@ -71,13 +71,10 @@ const ProductDetail = () => {
     try {
       await addItem({
         productId: product.id,
-        productName: product.name,
-        productPrice: product.price,
-        productImage: product.images[0],
         quantity,
-        customName: customName || undefined,
         selectedColor,
-        selectedHandle
+        selectedHandle,
+        customName: customName || undefined
       });
       
       uiToast({
@@ -86,7 +83,6 @@ const ProductDetail = () => {
       });
     } catch (error) {
       console.error('Error adding to cart:', error);
-      toast.error('Failed to add item to cart');
     }
   };
 

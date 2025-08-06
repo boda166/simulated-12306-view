@@ -1,62 +1,47 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, RefreshCw } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { useCartStore } from '@/stores/cartStore';
-import { getProductById } from '@/lib/mockData';
+import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
-import productBlack from '@/assets/product-black-bag.jpg';
 
 const Cart = () => {
-  const { items: cartItems, updateQuantity, removeItem, clearCart } = useCartStore();
+  const { cartSummary, updateQuantity, removeItem, clearCart, isLoading, refreshCart } = useCart();
   const { toast } = useToast();
   const [couponCode, setCouponCode] = useState('');
-  const [displayItems, setDisplayItems] = useState<any[]>([]);
 
-  useEffect(() => {
-    // Convert cart items to display items with product data
-    const items = cartItems.map(cartItem => {
-      const product = getProductById(cartItem.productId);
-      return {
-        id: cartItem.productId,
-        name: product?.name || 'Unknown Product',
-        price: product?.price || 0,
-        image: product?.images[0] || productBlack,
-        quantity: cartItem.quantity,
-        customName: cartItem.customName || '',
-        color: cartItem.selectedColor || '',
-        handle: cartItem.selectedHandle || ''
-      };
-    });
-    setDisplayItems(items);
-  }, [cartItems]);
+  const { items: displayItems, subtotal, shipping, total, isEmpty } = cartSummary;
 
-  const handleUpdateQuantity = (id: string, newQuantity: number) => {
-    updateQuantity(id, newQuantity);
-    toast({
-      title: "Cart Updated",
-      description: newQuantity === 0 ? "Item removed from cart" : "Quantity updated",
-    });
+  const handleUpdateQuantity = async (id: string, newQuantity: number) => {
+    try {
+      await updateQuantity(id, newQuantity);
+      toast({
+        title: "Cart Updated",
+        description: newQuantity === 0 ? "Item removed from cart" : "Quantity updated",
+      });
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+    }
   };
 
-  const handleRemoveItem = (id: string) => {
-    removeItem(id);
-    toast({
-      title: "Item Removed",
-      description: "Item has been removed from your cart",
-    });
+  const handleRemoveItem = async (id: string) => {
+    try {
+      await removeItem(id);
+      toast({
+        title: "Item Removed",
+        description: "Item has been removed from your cart",
+      });
+    } catch (error) {
+      console.error('Error removing item:', error);
+    }
   };
 
-  const subtotal = displayItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shipping = subtotal > 100 ? 0 : 15;
-  const total = subtotal + shipping;
-
-  if (displayItems.length === 0) {
+  if (isEmpty) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -81,8 +66,21 @@ const Cart = () => {
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-playfair font-bold text-deep-rose mb-2">Shopping Cart</h1>
-          <p className="text-muted-foreground">Review your items and proceed to checkout</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-playfair font-bold text-deep-rose mb-2">Shopping Cart</h1>
+              <p className="text-muted-foreground">Review your items and proceed to checkout</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={refreshCart}
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -91,59 +89,62 @@ const Cart = () => {
             {displayItems.map((item) => (
               <Card key={item.id} className="overflow-hidden">
                 <CardContent className="p-6">
-                  <div className="flex gap-4">
-                    <div className="w-24 h-24 rounded-lg overflow-hidden bg-gradient-subtle">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-playfair font-semibold text-lg">{item.name}</h3>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveItem(item.id)}
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      
-                      <div className="space-y-1 text-sm text-muted-foreground mb-4">
-                        <p>Color: {item.color}</p>
-                        <p>Handle: {item.handle}</p>
-                        {item.customName && <p>Custom Name: {item.customName}</p>}
-                      </div>
+                   <div className="flex gap-4">
+                     <div className="w-24 h-24 rounded-lg overflow-hidden bg-gradient-subtle">
+                       <img
+                         src={item.productImage}
+                         alt={item.productName}
+                         className="w-full h-full object-cover"
+                       />
+                     </div>
+                     
+                     <div className="flex-1">
+                       <div className="flex justify-between items-start mb-2">
+                         <h3 className="font-playfair font-semibold text-lg">{item.productName}</h3>
+                         <Button
+                           variant="ghost"
+                           size="icon"
+                           onClick={() => handleRemoveItem(item.id)}
+                           className="text-muted-foreground hover:text-destructive"
+                           disabled={isLoading}
+                         >
+                           <Trash2 className="w-4 h-4" />
+                         </Button>
+                       </div>
+                       
+                       <div className="space-y-1 text-sm text-muted-foreground mb-4">
+                         {item.selectedColor && <p>Color: {item.selectedColor}</p>}
+                         {item.selectedHandle && <p>Handle: {item.selectedHandle}</p>}
+                         {item.customName && <p>Custom Name: {item.customName}</p>}
+                       </div>
 
                       <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                            className="h-8 w-8"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </Button>
-                          <span className="w-8 text-center font-medium">{item.quantity}</span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                            className="h-8 w-8"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
-                          <p className="text-sm text-muted-foreground">${item.price} each</p>
-                        </div>
-                      </div>
+                         <div className="flex items-center gap-3">
+                           <Button
+                             variant="outline"
+                             size="icon"
+                             onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                             className="h-8 w-8"
+                             disabled={isLoading}
+                           >
+                             <Minus className="w-3 h-3" />
+                           </Button>
+                           <span className="w-8 text-center font-medium">{item.quantity}</span>
+                           <Button
+                             variant="outline"
+                             size="icon"
+                             onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                             className="h-8 w-8"
+                             disabled={isLoading}
+                           >
+                             <Plus className="w-3 h-3" />
+                           </Button>
+                         </div>
+                         <div className="text-right">
+                           <p className="font-semibold">${item.totalPrice.toFixed(2)}</p>
+                           <p className="text-sm text-muted-foreground">${item.productPrice.toFixed(2)} each</p>
+                         </div>
+                       </div>
                     </div>
                   </div>
                 </CardContent>

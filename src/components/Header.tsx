@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingBag, Menu, X, Search, Heart, User, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
-import { useCartStore } from "@/stores/cartStore";
+import { useCart } from "@/hooks/useCart";
 import { useWishlistStore } from "@/stores/wishlistStore";
 import { SearchDialog } from "./SearchDialog";
 import { authAPI } from "@/lib/api";
@@ -16,16 +16,15 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const navigate = useNavigate();
   const { user, isAuthenticated, isAdmin, signOut, initializeAuth } = useAuthStore();
-  const { totalItems, syncWithDatabase } = useCartStore();
+  const { cartSummary } = useCart();
   const { syncWithDatabase: syncWishlist } = useWishlistStore();
 
   useEffect(() => {
     initializeAuth();
     if (isAuthenticated) {
-      syncWithDatabase();
       syncWishlist();
     }
-  }, [initializeAuth, isAuthenticated, syncWithDatabase, syncWishlist]);
+  }, [initializeAuth, isAuthenticated, syncWishlist]);
 
   const handleLogout = async () => {
     await signOut();
@@ -139,9 +138,9 @@ const Header = () => {
               onClick={() => navigate('/cart')}
             >
               <ShoppingBag className="h-5 w-5" />
-              {totalItems > 0 && (
+              {cartSummary.totalItems > 0 && (
                 <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-rose-gold text-white text-xs">
-                  {totalItems}
+                  {cartSummary.totalItems}
                 </Badge>
               )}
             </Button>
