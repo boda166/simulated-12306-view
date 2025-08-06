@@ -331,6 +331,12 @@ const Admin = () => {
     }
   };
 
+  const handleSaveProduct = () => {
+    setShowProductForm(false);
+    setEditingProduct(null);
+    fetchAdminData();
+  };
+
   const handleDeleteProduct = async (productId: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
@@ -833,7 +839,7 @@ const Admin = () => {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <AdminProductForm
               product={editingProduct as any}
-              onSave={editingProduct ? handleUpdateProduct : handleCreateProduct}
+              onSave={handleSaveProduct}
               onCancel={() => {
                 setShowProductForm(false);
                 setEditingProduct(null);

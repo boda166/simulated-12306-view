@@ -1,6 +1,6 @@
 const API_BASE_URL = 'https://lullibag.runasp.net/api';
 
-// Types
+// Legacy types - use @/types/product for new code
 export interface Product {
   id: string;
   name: string;

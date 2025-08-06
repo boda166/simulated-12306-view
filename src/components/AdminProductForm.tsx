@@ -7,31 +7,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus, Upload, AlertCircle, CheckCircle } from 'lucide-react';
-// Use local interface to extend Product with additional admin fields
-interface ExtendedProduct {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  description?: string;
-  images: string[];
-  categoryId: string;
-  inStock: boolean;
-  stockQuantity: number;
-  colors: string[];
-  handles: string[];
-  features: string[];
-  featured?: boolean;
-}
+import { useProducts } from '@/hooks/useProducts';
+import { ProductDisplay } from '@/types/product';
 import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
 interface AdminProductFormProps {
-  product?: ExtendedProduct | null;
-  onSave: (productData: any) => Promise<void>;
+  product?: ProductDisplay | null;
+  onSave: () => void;
   onCancel: () => void;
 }
 
 const AdminProductForm = ({ product, onSave, onCancel }: AdminProductFormProps) => {
+  const { createProduct, updateProduct } = useProducts();
+  const { toast: uiToast } = useToast();
   const [formData, setFormData] = useState({
     name: product?.name || '',
     price: product?.price || 0,
@@ -43,7 +32,7 @@ const AdminProductForm = ({ product, onSave, onCancel }: AdminProductFormProps) 
     colors: product?.colors || [''],
     handles: product?.handles || [''],
     features: product?.features || [''],
-    featured: product?.featured || false,
+    featured: product?.isBestseller || false,
     inStock: product?.inStock !== false,
   });
   
@@ -93,17 +82,39 @@ const AdminProductForm = ({ product, onSave, onCancel }: AdminProductFormProps) 
     setIsSubmitting(true);
     
     try {
-      await onSave({
-        ...formData,
-        inStock: formData.inStock && formData.stockQuantity > 0,
+      const productData = {
+        name: formData.name,
+        description: formData.description,
+        price: formData.price,
+        original_price: formData.originalPrice || undefined,
+        image_url: formData.images.filter(img => img.trim())[0] || undefined,
         images: formData.images.filter(img => img.trim()),
         colors: formData.colors.filter(color => color.trim()),
-        handles: formData.handles.filter(handle => handle.trim()),
-        features: formData.features.filter(feature => feature.trim()),
+        handle_types: formData.handles.filter(handle => handle.trim()),
+        in_stock: formData.inStock && formData.stockQuantity > 0,
+        featured: formData.featured,
+      };
+
+      if (product) {
+        await updateProduct(product.id, productData);
+      } else {
+        await createProduct(productData);
+      }
+
+      uiToast({
+        title: "Success",
+        description: `Product ${product ? 'updated' : 'created'} successfully!`,
       });
-      toast.success(product ? 'Product updated successfully' : 'Product created successfully');
+
+      onSave();
     } catch (error) {
-      toast.error('Failed to save product');
+      console.error('Error saving product:', error);
+      
+      uiToast({
+        title: "Error",
+        description: `Failed to ${product ? 'update' : 'create'} product. Please try again.`,
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }

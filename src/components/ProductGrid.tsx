@@ -1,60 +1,18 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Grid, List, Filter, SlidersHorizontal } from "lucide-react";
-import ProductCard from "./ProductCard";
-import { Product } from "@/lib/api";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Grid, List, Filter, SlidersHorizontal } from 'lucide-react';
+import ProductCard from './ProductCard';
+import { useProducts } from '@/hooks/useProducts';
+import { ProductDisplay } from '@/types/product';
 
 const ProductGrid = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { products, isLoading } = useProducts();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedColor, setSelectedColor] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Transform data to match expected format
-      const transformedProducts: Product[] = (data || []).map(product => ({
-        id: product.id,
-        name: product.name,
-        price: Number(product.price),
-        originalPrice: product.original_price ? Number(product.original_price) : undefined,
-        images: product.images || [product.image_url || '/placeholder.svg'],
-        description: product.description || '',
-        colors: product.colors || [],
-        handles: product.handle_types || [],
-        inStock: product.in_stock ?? true,
-        stockQuantity: 10, // Default stock
-        categoryId: 'handbag', // Default category
-        features: []
-      }));
-
-      setProducts(transformedProducts);
-    } catch (error) {
-      console.error('Error loading products:', error);
-      toast.error('Error loading products');
-      setProducts([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const filteredProducts = products.filter(product => {
     if (selectedCategory !== 'all' && product.categoryId !== selectedCategory) return false;

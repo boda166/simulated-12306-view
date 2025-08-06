@@ -12,12 +12,10 @@ import Footer from '@/components/Footer';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { toast } from 'sonner';
-import productBlack from '@/assets/product-black-bag.jpg';
-import productWhite from '@/assets/product-white-bag.jpg';
-import productRose from '@/assets/product-rose-bag.jpg';
+import { useProducts } from '@/hooks/useProducts';
+import { ProductDisplay } from '@/types/product';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -26,12 +24,13 @@ const ProductDetail = () => {
   const { addItem } = useCartStore();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
   const { toast: uiToast } = useToast();
+  const { getProductById } = useProducts();
   const [selectedImage, setSelectedImage] = useState(0);
   const [customName, setCustomName] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedHandle, setSelectedHandle] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<ProductDisplay | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -43,45 +42,11 @@ const ProductDetail = () => {
     
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        setProduct({
-          id: data.id,
-          name: data.name,
-          price: Number(data.price),
-          originalPrice: data.original_price ? Number(data.original_price) : undefined,
-          images: data.images || [data.image_url || productBlack],
-          description: data.description || 'Handcrafted with premium beads and elegant finishing.',
-          colors: data.colors || ['Black', 'White', 'Rose Gold'],
-          handles: data.handle_types || ['Pearl Chain', 'Gold Chain', 'Ribbon Drawstring'],
-          inStock: data.in_stock ?? true,
-          categoryId: 'handbag',
-          features: ['Handmade with premium beads', 'Customizable with your name', 'Choice of handle types', 'Elegant gift packaging']
-        });
-      }
+      const productData = await getProductById(id);
+      setProduct(productData);
     } catch (error) {
       console.error('Error fetching product:', error);
-      // Fallback to default product
-      setProduct({
-        id: id || '1',
-        name: 'Midnight Elegance',
-        price: 129,
-        originalPrice: 159,
-        images: [productBlack, productWhite, productRose],
-        description: 'Handcrafted with premium beads and elegant finishing, this bag represents the perfect blend of traditional craftsmanship and modern design.',
-        colors: ['Black', 'White', 'Rose Gold'],
-        handles: ['Pearl Chain', 'Gold Chain', 'Ribbon Drawstring'],
-        inStock: true,
-        categoryId: 'evening',
-        features: ['Handmade with premium beads', 'Customizable with your name', 'Choice of handle types', 'Elegant gift packaging']
-      });
+      toast.error('Failed to load product');
     } finally {
       setIsLoading(false);
     }
