@@ -35,6 +35,7 @@ import AdminProductForm from '@/components/AdminProductForm';
 import AdminOrderDetails from '@/components/AdminOrderDetails';
 import AdminCustomers from '@/components/AdminCustomers';
 import AdminAnalytics from '@/components/AdminAnalytics';
+import OrderManagement from '@/components/OrderManagement';
 
 interface Order {
   id: string;
@@ -575,97 +576,7 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="orders">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Orders Management</span>
-                  <Badge variant="secondary">{filteredOrders.length} orders</Badge>
-                </CardTitle>
-                <CardDescription>Manage and track customer orders</CardDescription>
-                
-                {/* Search and Filter Controls */}
-                <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search orders by customer, email, or order ID..."
-                      value={orderSearch}
-                      onChange={(e) => setOrderSearch(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                  <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
-                    <SelectTrigger className="w-full sm:w-40">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="processing">Processing</SelectItem>
-                      <SelectItem value="shipped">Shipped</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {filteredOrders.length === 0 ? (
-                    <div className="text-center py-12">
-                      <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">
-                        {orderSearch || orderStatusFilter !== 'all' ? 'No orders match your filters' : 'No orders found'}
-                      </p>
-                    </div>
-                  ) : (
-                    filteredOrders.map((order) => {
-                      const StatusIcon = getStatusIcon(order.status);
-                      return (
-                        <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-gradient-to-br from-rose-gold to-deep-rose rounded-full flex items-center justify-center text-white font-medium text-sm">
-                              #{order.id.slice(0, 4)}
-                            </div>
-                            <div className="space-y-1">
-                              <p className="font-medium">{order.customerName}</p>
-                              <p className="text-sm text-muted-foreground">{order.customerEmail}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(order.createdAt).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right space-y-1">
-                            <p className="font-medium">${order.totalAmount.toFixed(2)}</p>
-                            <Badge className={getStatusColor(order.status)}>
-                              <StatusIcon className="w-3 h-3 mr-1" />
-                              {order.status}
-                            </Badge>
-                            <p className="text-xs text-muted-foreground">{order.items.length} item(s)</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="icon"
-                              onClick={() => setSelectedOrder(order)}
-                              title="View Details"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <OrderManagement />
           </TabsContent>
 
           <TabsContent value="products">

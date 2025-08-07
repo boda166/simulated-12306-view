@@ -7,14 +7,14 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAuthStore } from '@/stores/authStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
-import { useCartStore } from '@/stores/cartStore';
+import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 
 const Wishlist = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
   const { items: wishlistItems, syncWithDatabase, removeFromWishlist, isLoading } = useWishlistStore();
-  const { addItem } = useCartStore();
+  const { addItem } = useCart();
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -38,9 +38,6 @@ const Wishlist = () => {
     try {
       await addItem({
         productId: item.productId,
-        productName: item.productName,
-        productPrice: item.productPrice,
-        productImage: item.productImage,
         quantity: 1,
       });
       toast.success('Added to cart');

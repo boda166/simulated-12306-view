@@ -11,14 +11,15 @@ import { ArrowLeft, CreditCard, Truck } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAuthStore } from '@/stores/authStore';
-import { useCartStore } from '@/stores/cartStore';
-import { supabase } from '@/integrations/supabase/client';
+import { useCart } from '@/hooks/useCart';
+import { useOrders } from '@/hooks/useOrders';
 import { toast } from 'sonner';
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
-  const { items: cartItems, clearCart } = useCartStore();
+  const { cartSummary, clearCart } = useCart();
+  const { createOrder } = useOrders();
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -41,7 +42,7 @@ const Checkout = () => {
   }, [isAuthenticated, navigate]);
 
   // Get order items from cart
-  const orderItems = cartItems.map(item => ({
+  const orderItems = cartSummary.items.map(item => ({
     id: item.productId,
     name: item.productName,
     price: item.productPrice,
@@ -51,9 +52,7 @@ const Checkout = () => {
     selectedHandle: item.selectedHandle,
   }));
 
-  const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shipping = 0; // Free shipping
-  const total = subtotal + shipping;
+  const { subtotal, shipping, total } = cartSummary;
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -84,53 +83,35 @@ const Checkout = () => {
     setIsSubmitting(true);
     
     try {
-      // Create order in database
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          total_amount: total,
-          payment_method: paymentMethod,
-          status: 'pending',
-          contact_info: {
-            email: formData.email,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            phone: formData.phone,
-          },
-          shipping_address: {
-            address: formData.address,
-            city: formData.city,
-            postalCode: formData.postalCode,
-            notes: formData.notes,
-          },
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // Create order items
-      const orderItemsData = orderItems.map(item => ({
-        order_id: order.id,
-        product_id: item.id,
-        quantity: item.quantity,
-        price: item.price,
-        selected_color: item.selectedColor,
-        selected_handle: item.selectedHandle,
-        custom_name: item.customName,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItemsData);
-
-      if (itemsError) throw itemsError;
+      // Create order using the useOrders hook
+      await createOrder({
+        total_amount: total,
+        payment_method: paymentMethod,
+        contact_info: {
+          email: formData.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone,
+        },
+        shipping_address: {
+          address: formData.address,
+          city: formData.city,
+          postalCode: formData.postalCode,
+          notes: formData.notes,
+        },
+        order_items: orderItems.map(item => ({
+          product_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          selected_color: item.selectedColor,
+          selected_handle: item.selectedHandle,
+          custom_name: item.customName,
+        }))
+      });
 
       // Clear cart after successful order
       await clearCart();
       
-      toast.success('Order placed successfully!');
       navigate('/account'); // Redirect to account page to view orders
     } catch (error) {
       console.error('Error submitting order:', error);

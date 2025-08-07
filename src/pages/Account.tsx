@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAuthStore } from '@/stores/authStore';
+import { useOrders } from '@/hooks/useOrders';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Profile {
@@ -43,8 +44,8 @@ interface Order {
 const Account = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, signOut } = useAuthStore();
+  const { orders, isLoading: ordersLoading } = useOrders();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [editData, setEditData] = useState({
@@ -59,7 +60,6 @@ const Account = () => {
     }
 
     fetchProfile();
-    fetchOrders();
   }, [isAuthenticated, user, navigate]);
 
   const fetchProfile = async () => {
@@ -87,33 +87,6 @@ const Account = () => {
     }
   };
 
-  const fetchOrders = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (
-            *,
-            products (
-              name,
-              image_url
-            )
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setOrders(data || []);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      toast.error('Failed to load order history');
-    }
-  };
 
   const updateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
