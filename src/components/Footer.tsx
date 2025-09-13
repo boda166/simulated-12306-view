@@ -183,9 +183,7 @@ const Footer = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2 text-white/70 text-sm font-montserrat">
-              <span>© {currentYear} Luli Beads. Made with</span>
-              <Heart className="h-4 w-4 text-rose-gold fill-current" />
-              <span>in New York</span>
+              <span>© {currentYear} Luli Beads. Seven Pictures</span>
             </div>
             
             <div className="flex items-center gap-6 text-white/70 text-sm font-montserrat">
