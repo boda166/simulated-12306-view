@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Heart, ShoppingBag, Eye, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCartStore } from "@/stores/cartStore";
+import { useCart } from "@/hooks/useCart";
 import { useWishlistStore } from "@/stores/wishlistStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "@/hooks/use-toast";
@@ -41,7 +41,7 @@ const ProductCard = ({
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthStore();
-  const { addItem } = useCartStore();
+  const { addItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
   
   const isLiked = isInWishlist(id);
@@ -62,9 +62,6 @@ const ProductCard = ({
     try {
       await addItem({
         productId: id,
-        productName: name,
-        productPrice: price,
-        productImage: image,
         quantity: 1,
       });
       
