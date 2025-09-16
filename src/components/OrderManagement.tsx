@@ -213,6 +213,8 @@ const OrderManagement = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => setSelectedOrder(order)}
+                      disabled={!order}
+                      title="View order details"
                     >
                       <Eye className="w-4 h-4" />
                     </Button>

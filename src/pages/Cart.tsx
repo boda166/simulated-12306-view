@@ -120,25 +120,25 @@ const Cart = () => {
 
                       <div className="flex justify-between items-center">
                          <div className="flex items-center gap-3">
-                           <Button
-                             variant="outline"
-                             size="icon"
-                             onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                             className="h-8 w-8"
-                             disabled={isLoading}
-                           >
-                             <Minus className="w-3 h-3" />
-                           </Button>
-                           <span className="w-8 text-center font-medium">{item.quantity}</span>
-                           <Button
-                             variant="outline"
-                             size="icon"
-                             onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                             className="h-8 w-8"
-                             disabled={isLoading}
-                           >
-                             <Plus className="w-3 h-3" />
-                           </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleUpdateQuantity(item.id, Math.max(0, item.quantity - 1))}
+                              className="h-8 w-8"
+                              disabled={isLoading || item.quantity <= 1}
+                            >
+                              <Minus className="w-3 h-3" />
+                            </Button>
+                            <span className="w-8 text-center font-medium">{item.quantity}</span>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                              className="h-8 w-8"
+                              disabled={isLoading}
+                            >
+                              <Plus className="w-3 h-3" />
+                            </Button>
                          </div>
                          <div className="text-right">
                            <p className="font-semibold">${item.totalPrice.toFixed(2)}</p>

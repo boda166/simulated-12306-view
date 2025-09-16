@@ -53,7 +53,11 @@ export const useOrders = () => {
   const { user, isAuthenticated, isAdmin } = useAuthStore();
 
   const fetchOrders = useCallback(async (userId?: string) => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated && !isAdmin) {
+      setOrders([]);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -75,19 +79,35 @@ export const useOrders = () => {
 
       // If not admin or specific user ID provided, filter by current user
       if (!isAdmin || userId) {
-        query = query.eq('user_id', userId || user?.id);
+        const targetUserId = userId || user?.id;
+        if (targetUserId) {
+          query = query.eq('user_id', targetUserId);
+        } else {
+          // No user ID available, return empty results
+          setOrders([]);
+          return;
+        }
       }
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       setOrders(data || []);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch orders';
       setError(errorMessage);
       console.error('Error fetching orders:', err);
-      toast.error('Failed to load orders');
+      
+      // Only show toast if it's not an auth error
+      if (!err?.message?.includes('refresh_token_not_found')) {
+        toast.error('Failed to load orders');
+      }
+      
+      setOrders([]);
     } finally {
       setIsLoading(false);
     }
@@ -202,32 +222,37 @@ export const useOrders = () => {
 
   // Set up real-time subscription for orders
   useEffect(() => {
-    if (!user) return;
+    if (!isAuthenticated) {
+      setOrders([]);
+      return;
+    }
 
     fetchOrders();
 
-    // Subscribe to real-time changes
-    const channel = supabase
-      .channel('order-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
-          filter: isAdmin ? undefined : `user_id=eq.${user.id}`
-        },
-        () => {
-          console.log('Order change detected');
-          fetchOrders();
-        }
-      )
-      .subscribe();
+    // Subscribe to real-time changes only if authenticated
+    if (user) {
+      const channel = supabase
+        .channel('order-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'orders',
+            filter: isAdmin ? undefined : `user_id=eq.${user.id}`
+          },
+          () => {
+            console.log('Order change detected');
+            fetchOrders();
+          }
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, isAdmin, fetchOrders]);
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user, isAuthenticated, isAdmin, fetchOrders]);
 
   return {
     orders,

@@ -107,8 +107,25 @@ export const useAuthStore = create<AuthState>()(
       initializeAuth: async () => {
         set({ isLoading: true });
         
-        // Set up auth state listener
-        supabase.auth.onAuthStateChange((event, session) => {
+        try {
+          // Get initial session first
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.warn('Session error:', error);
+            // Clear any invalid session data
+            await supabase.auth.signOut();
+            set({ 
+              session: null, 
+              user: null, 
+              isAuthenticated: false,
+              isLoading: false,
+              userProfile: null,
+              isAdmin: false
+            });
+            return;
+          }
+
           set({ 
             session, 
             user: session?.user || null, 
@@ -116,27 +133,49 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false
           });
           
-          // Fetch user profile when session changes
+          // Fetch user profile for initial session
           if (session?.user) {
-            setTimeout(() => get().fetchUserProfile(), 0);
-          } else {
-            // Clear profile when user logs out
-            set({ userProfile: null, isAdmin: false });
+            await get().fetchUserProfile();
           }
-        });
 
-        // Get initial session
-        const { data: { session } } = await supabase.auth.getSession();
-        set({ 
-          session, 
-          user: session?.user || null, 
-          isAuthenticated: !!session?.user,
-          isLoading: false
-        });
-        
-        // Fetch user profile for initial session
-        if (session?.user) {
-          await get().fetchUserProfile();
+          // Set up auth state listener
+          supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('Auth state change:', event);
+            
+            if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+              set({ 
+                session, 
+                user: session?.user || null, 
+                isAuthenticated: !!session?.user,
+                isLoading: false
+              });
+            } else {
+              set({ 
+                session, 
+                user: session?.user || null, 
+                isAuthenticated: !!session?.user,
+                isLoading: false
+              });
+            }
+            
+            // Fetch user profile when session changes
+            if (session?.user) {
+              setTimeout(() => get().fetchUserProfile(), 0);
+            } else {
+              // Clear profile when user logs out
+              set({ userProfile: null, isAdmin: false });
+            }
+          });
+        } catch (error) {
+          console.error('Auth initialization error:', error);
+          set({ 
+            session: null, 
+            user: null, 
+            isAuthenticated: false,
+            isLoading: false,
+            userProfile: null,
+            isAdmin: false
+          });
         }
       },
     }),
