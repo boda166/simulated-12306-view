@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Eye, Search, Filter, Package } from 'lucide-react';
 import { useOrders } from '@/hooks/useOrders';
 import { toast } from 'sonner';
+import AdminOrderDetails from '@/components/AdminOrderDetails';
 
 const OrderManagement = () => {
   const { orders, isLoading, updateOrderStatus } = useOrders();
@@ -213,7 +214,6 @@ const OrderManagement = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => setSelectedOrder(order)}
-                      disabled={!order}
                       title="View order details"
                     >
                       <Eye className="w-4 h-4" />
@@ -226,8 +226,14 @@ const OrderManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Order Details Modal would go here */}
-      {/* You can implement a modal or drawer to show order details */}
+      {/* Order Details Modal */}
+      {selectedOrder && (
+        <AdminOrderDetails
+          order={selectedOrder}
+          onUpdateStatus={handleStatusUpdate}
+          onClose={() => setSelectedOrder(null)}
+        />
+      )}
     </div>
   );
 };

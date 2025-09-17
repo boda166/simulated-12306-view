@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, Package, User, MapPin, Phone, Mail } from 'lucide-react';
-import { Order } from '@/lib/api';
+import { Order } from '@/hooks/useOrders';
 import { toast } from 'sonner';
 
 interface AdminOrderDetailsProps {
@@ -87,19 +87,19 @@ const AdminOrderDetails = ({ order, onUpdateStatus, onClose }: AdminOrderDetails
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center">
                 <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span>{order.customerName}</span>
+                <span>{order.contact_info?.firstName} {order.contact_info?.lastName}</span>
               </div>
               <div className="flex items-center">
                 <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span>{order.customerEmail}</span>
+                <span>{order.contact_info?.email}</span>
               </div>
               <div className="flex items-center">
                 <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span>{order.customerPhone}</span>
+                <span>{order.contact_info?.phone}</span>
               </div>
               <div className="flex items-start">
                 <MapPin className="h-4 w-4 mr-2 text-muted-foreground mt-1" />
-                <span className="text-sm">{order.shippingAddress}</span>
+                <span className="text-sm">{order.shipping_address?.street}, {order.shipping_address?.city}, {order.shipping_address?.state} {order.shipping_address?.zipCode}</span>
               </div>
             </div>
           </div>
@@ -111,23 +111,26 @@ const AdminOrderDetails = ({ order, onUpdateStatus, onClose }: AdminOrderDetails
               Order Items
             </h3>
             <div className="space-y-3">
-              {order.items.map((item, index) => (
+              {order.order_items?.map((item, index) => (
                 <div key={index} className="flex justify-between items-center p-3 bg-muted/50 rounded">
                   <div>
-                    <p className="font-medium">Product ID: {item.productId}</p>
+                    <p className="font-medium">{item.products?.name || `Product ID: ${item.product_id}`}</p>
                     <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
-                    {item.customName && (
-                      <p className="text-sm text-muted-foreground">Custom Name: {item.customName}</p>
+                    <p className="text-sm text-muted-foreground">Price: ${item.price.toFixed(2)}</p>
+                    {item.custom_name && (
+                      <p className="text-sm text-muted-foreground">Custom Name: {item.custom_name}</p>
                     )}
-                    {item.selectedColor && (
-                      <p className="text-sm text-muted-foreground">Color: {item.selectedColor}</p>
+                    {item.selected_color && (
+                      <p className="text-sm text-muted-foreground">Color: {item.selected_color}</p>
                     )}
-                    {item.selectedHandle && (
-                      <p className="text-sm text-muted-foreground">Handle: {item.selectedHandle}</p>
+                    {item.selected_handle && (
+                      <p className="text-sm text-muted-foreground">Handle: {item.selected_handle}</p>
                     )}
                   </div>
                 </div>
-              ))}
+              )) || (
+                <p className="text-muted-foreground">No items found</p>
+              )}
             </div>
           </div>
 
@@ -137,11 +140,11 @@ const AdminOrderDetails = ({ order, onUpdateStatus, onClose }: AdminOrderDetails
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Order Date:</span>
-                <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                <span>{new Date(order.created_at).toLocaleDateString()}</span>
               </div>
               <div className="flex justify-between font-semibold text-lg">
                 <span>Total Amount:</span>
-                <span>${order.totalAmount.toFixed(2)}</span>
+                <span>${order.total_amount.toFixed(2)}</span>
               </div>
             </div>
           </div>
