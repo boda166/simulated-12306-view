@@ -60,6 +60,20 @@ export const useCart = () => {
     try {
       setIsLoading(true);
 
+      // First, get the product to check stock
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('stock_quantity, in_stock, name')
+        .eq('id', item.productId)
+        .single();
+
+      if (productError) throw productError;
+
+      if (!product.in_stock || product.stock_quantity <= 0) {
+        toast.error(`${product.name} is out of stock`);
+        return;
+      }
+
       // Check if item with same configuration already exists
       const existingItem = cartItems.find(cartItem => 
         cartItem.productId === item.productId &&
@@ -67,6 +81,14 @@ export const useCart = () => {
         cartItem.selectedHandle === item.selectedHandle &&
         cartItem.customName === item.customName
       );
+
+      const newQuantity = existingItem ? existingItem.quantity + item.quantity : item.quantity;
+
+      // Check if requested quantity exceeds available stock
+      if (newQuantity > product.stock_quantity) {
+        toast.error(`Only ${product.stock_quantity} items available in stock`);
+        return;
+      }
 
       if (existingItem) {
         // Update quantity of existing item
@@ -106,6 +128,27 @@ export const useCart = () => {
 
     try {
       setIsLoading(true);
+
+      // Get the cart item to check product ID
+      const cartItem = cartItems.find(item => item.id === id);
+      if (!cartItem) {
+        toast.error('Cart item not found');
+        return;
+      }
+
+      // Check product stock
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('stock_quantity, in_stock, name')
+        .eq('id', cartItem.productId)
+        .single();
+
+      if (productError) throw productError;
+
+      if (!product.in_stock || quantity > product.stock_quantity) {
+        toast.error(`Only ${product.stock_quantity} items available in stock for ${product.name}`);
+        return;
+      }
 
       const { error } = await supabase
         .from('cart_items')

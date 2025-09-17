@@ -92,6 +92,7 @@ const AdminProductForm = ({ product, onSave, onCancel }: AdminProductFormProps) 
         colors: formData.colors.filter(color => color.trim()),
         handle_types: formData.handles.filter(handle => handle.trim()),
         in_stock: formData.inStock && formData.stockQuantity > 0,
+        stock_quantity: formData.stockQuantity,
         featured: formData.featured,
       };
 

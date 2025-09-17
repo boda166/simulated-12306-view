@@ -176,6 +176,8 @@ const ProductGrid = () => {
                 isBestseller={false}
                 colors={product.colors}
                 customizable={true}
+                inStock={product.inStock}
+                stockQuantity={product.stockQuantity}
               />
             ))}
           </div>

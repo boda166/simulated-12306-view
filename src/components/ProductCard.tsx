@@ -21,6 +21,8 @@ interface ProductCardProps {
   isBestseller?: boolean;
   colors?: string[];
   customizable?: boolean;
+  inStock?: boolean;
+  stockQuantity?: number;
   className?: string;
 }
 
@@ -35,6 +37,8 @@ const ProductCard = ({
   isBestseller = false,
   colors = [],
   customizable = true,
+  inStock = true,
+  stockQuantity = 0,
   className,
 }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -193,10 +197,11 @@ const ProductCard = ({
             variant="hero"
             size="lg"
             onClick={handleAddToCart}
+            disabled={!inStock || stockQuantity <= 0}
             className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300"
           >
             <ShoppingBag className="h-4 w-4 mr-2" />
-            Add to Cart
+            {!inStock || stockQuantity <= 0 ? "Out of Stock" : "Add to Cart"}
           </Button>
         </div>
       </div>
@@ -242,15 +247,27 @@ const ProductCard = ({
           )}
         </div>
 
+        {/* Stock information */}
+        <div className="text-sm font-montserrat">
+          {stockQuantity > 0 ? (
+            <span className="text-green-600">
+              {stockQuantity} in stock
+            </span>
+          ) : (
+            <span className="text-red-600">Out of stock</span>
+          )}
+        </div>
+
         {/* Add to Cart Button for Mobile */}
         <Button
           variant="elegant"
           size="lg"
           className="w-full md:hidden"
           onClick={handleAddToCart}
+          disabled={!inStock || stockQuantity <= 0}
         >
           <ShoppingBag className="h-4 w-4 mr-2" />
-          Add to Cart
+          {!inStock || stockQuantity <= 0 ? "Out of Stock" : "Add to Cart"}
         </Button>
       </div>
     </Card>

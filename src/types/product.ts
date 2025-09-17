@@ -10,6 +10,7 @@ export interface Product {
   colors: string[];
   handle_types: string[];
   in_stock: boolean;
+  stock_quantity: number;
   featured: boolean;
   created_at: string;
   updated_at: string;
@@ -26,6 +27,7 @@ export interface CreateProductInput {
   colors: string[];
   handle_types: string[];
   in_stock?: boolean;
+  stock_quantity?: number;
   featured?: boolean;
 }
 
@@ -41,6 +43,7 @@ export interface UpdateProductInput {
   colors?: string[];
   handle_types?: string[];
   in_stock?: boolean;
+  stock_quantity?: number;
   featured?: boolean;
 }
 
@@ -74,7 +77,7 @@ export const transformProduct = (dbProduct: Product): ProductDisplay => ({
   images: dbProduct.images?.length ? dbProduct.images : [dbProduct.image_url || '/src/assets/product-black-bag.jpg'],
   categoryId: 'handbag', // Default category for now
   inStock: dbProduct.in_stock,
-  stockQuantity: 10, // Default stock quantity
+  stockQuantity: dbProduct.stock_quantity || 0,
   colors: dbProduct.colors || [],
   handles: dbProduct.handle_types || [],
   features: ['Handmade with premium beads', 'Customizable with your name', 'Choice of handle types', 'Elegant gift packaging'],
