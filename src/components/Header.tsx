@@ -8,7 +8,6 @@ import { useAuthStore } from "@/stores/authStore";
 import { useCart } from "@/hooks/useCart";
 import { useWishlistStore } from "@/stores/wishlistStore";
 import { SearchDialog } from "./SearchDialog";
-import { authAPI } from "@/lib/api";
 import { toast } from "sonner";
 
 const Header = () => {
