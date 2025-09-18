@@ -58,22 +58,13 @@ const ProductDetail = () => {
       navigate('/auth');
       return;
     }
-
-    if (!selectedColor || !selectedHandle) {
-      uiToast({
-        title: "Missing Selection",
-        description: "Please select color and handle type before adding to cart.",
-        variant: "destructive",
-      });
-      return;
-    }
     
     try {
       await addItem({
         productId: product.id,
         quantity,
-        selectedColor,
-        selectedHandle,
+        selectedColor: selectedColor || undefined,
+        selectedHandle: selectedHandle || undefined,
         customName: customName || undefined
       });
       
@@ -83,6 +74,11 @@ const ProductDetail = () => {
       });
     } catch (error) {
       console.error('Error adding to cart:', error);
+      uiToast({
+        title: "Error",
+        description: "Failed to add item to cart. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -109,11 +105,9 @@ const ProductDetail = () => {
     }
   };
 
-  const handleBuyNow = () => {
-    handleAddToCart();
-    if (selectedColor && selectedHandle) {
-      navigate('/cart');
-    }
+  const handleBuyNow = async () => {
+    await handleAddToCart();
+    navigate('/cart');
   };
 
   if (isLoading) {
@@ -244,29 +238,47 @@ const ProductDetail = () => {
               </div>
 
               <div>
-                <Label className="text-base font-medium">Color</Label>
+                <Label className="text-base font-medium">Color <span className="text-muted-foreground text-sm">(Optional)</span></Label>
                 <Select value={selectedColor} onValueChange={setSelectedColor}>
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Choose color" />
+                    <SelectValue placeholder="Choose color (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {product.colors.map((color) => (
-                      <SelectItem key={color} value={color}>{color}</SelectItem>
-                    ))}
+                    {product.colors.length > 0 && product.colors[0] !== '' ? (
+                      product.colors.map((color) => (
+                        <SelectItem key={color} value={color}>{color}</SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="Black">Black</SelectItem>
+                        <SelectItem value="White">White</SelectItem>
+                        <SelectItem value="Rose Gold">Rose Gold</SelectItem>
+                        <SelectItem value="Brown">Brown</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label className="text-base font-medium">Handle Type</Label>
+                <Label className="text-base font-medium">Handle Type <span className="text-muted-foreground text-sm">(Optional)</span></Label>
                 <Select value={selectedHandle} onValueChange={setSelectedHandle}>
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Choose handle type" />
+                    <SelectValue placeholder="Choose handle type (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {product.handles.map((handle) => (
-                      <SelectItem key={handle} value={handle}>{handle}</SelectItem>
-                    ))}
+                    {product.handles.length > 0 && product.handles[0] !== '' ? (
+                      product.handles.map((handle) => (
+                        <SelectItem key={handle} value={handle}>{handle}</SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="Short Handle">Short Handle</SelectItem>
+                        <SelectItem value="Long Handle">Long Handle</SelectItem>
+                        <SelectItem value="Chain Handle">Chain Handle</SelectItem>
+                        <SelectItem value="No Handle">No Handle</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
