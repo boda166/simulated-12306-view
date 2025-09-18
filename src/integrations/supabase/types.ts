@@ -58,6 +58,63 @@ export type Database = {
           },
         ]
       }
+      custom_orders: {
+        Row: {
+          admin_notes: string | null
+          budget_range: string | null
+          created_at: string
+          delivery_date: string | null
+          description: string | null
+          estimated_price: number | null
+          final_price: number | null
+          id: string
+          personalization_details: Json
+          preferred_colors: string[] | null
+          preferred_handles: string[] | null
+          product_name: string
+          reference_images: string[] | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          budget_range?: string | null
+          created_at?: string
+          delivery_date?: string | null
+          description?: string | null
+          estimated_price?: number | null
+          final_price?: number | null
+          id?: string
+          personalization_details: Json
+          preferred_colors?: string[] | null
+          preferred_handles?: string[] | null
+          product_name: string
+          reference_images?: string[] | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          budget_range?: string | null
+          created_at?: string
+          delivery_date?: string | null
+          description?: string | null
+          estimated_price?: number | null
+          final_price?: number | null
+          id?: string
+          personalization_details?: Json
+          preferred_colors?: string[] | null
+          preferred_handles?: string[] | null
+          product_name?: string
+          reference_images?: string[] | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string

@@ -16,6 +16,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Admin from "./pages/Admin";
 import Account from "./pages/Account";
 import Wishlist from "./pages/Wishlist";
+import CustomOrders from "./pages/CustomOrders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/account" element={<Account />} />
             <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/custom-orders" element={<CustomOrders />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

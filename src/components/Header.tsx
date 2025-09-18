@@ -34,6 +34,7 @@ const Header = () => {
   const navigation = [
     { name: "Home", href: "/", isLink: true },
     { name: "Shop", href: "/#shop", isShopLink: true },
+    { name: "Custom Orders", href: "/custom-orders", isLink: true },
     { name: "About", href: "/about", isLink: true },
     { name: "Contact", href: "/contact", isLink: true },
   ];

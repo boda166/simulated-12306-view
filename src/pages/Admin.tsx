@@ -36,6 +36,7 @@ import AdminOrderDetails from '@/components/AdminOrderDetails';
 import AdminCustomers from '@/components/AdminCustomers';
 import AdminAnalytics from '@/components/AdminAnalytics';
 import OrderManagement from '@/components/OrderManagement';
+import AdminCustomOrders from '@/components/AdminCustomOrders';
 
 interface Order {
   id: string;
@@ -491,10 +492,11 @@ const Admin = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="orders">Orders ({filteredOrders.length})</TabsTrigger>
             <TabsTrigger value="products">Products ({filteredProducts.length})</TabsTrigger>
+            <TabsTrigger value="custom-orders">Custom Orders</TabsTrigger>
             <TabsTrigger value="customers">Customers</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
@@ -718,6 +720,10 @@ const Admin = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="custom-orders">
+            <AdminCustomOrders />
           </TabsContent>
 
           <TabsContent value="customers">
