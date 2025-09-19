@@ -91,6 +91,7 @@ const AdminProductForm = ({ product, onSave, onCancel }: AdminProductFormProps) 
         images: formData.images.filter(img => img.trim()),
         colors: formData.colors.filter(color => color.trim()),
         handle_types: formData.handles.filter(handle => handle.trim()),
+        product_type: 'standard' as const, // Default to standard, can be changed later
         in_stock: formData.inStock && formData.stockQuantity > 0,
         stock_quantity: formData.stockQuantity,
         featured: formData.featured,

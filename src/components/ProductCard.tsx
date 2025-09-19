@@ -17,10 +17,11 @@ interface ProductCardProps {
   originalPrice?: number;
   image: string;
   category: string;
+  productType: 'standard' | 'custom';
   isNew?: boolean;
   isBestseller?: boolean;
   colors?: string[];
-  customizable?: boolean;
+  handleTypes?: string[];
   inStock?: boolean;
   stockQuantity?: number;
   className?: string;
@@ -33,10 +34,11 @@ const ProductCard = ({
   originalPrice,
   image,
   category,
+  productType,
   isNew = false,
   isBestseller = false,
   colors = [],
-  customizable = true,
+  handleTypes = [],
   inStock = true,
   stockQuantity = 0,
   className,
@@ -63,6 +65,13 @@ const ProductCard = ({
       return;
     }
 
+    // For custom products, redirect to custom order form
+    if (productType === 'custom') {
+      navigate('/custom-orders');
+      return;
+    }
+
+    // For standard products, add to cart
     try {
       await addItem({
         productId: id,
@@ -157,10 +166,10 @@ const ProductCard = ({
               Bestseller
             </Badge>
           )}
-          {customizable && (
+          {productType === 'custom' && (
             <Badge variant="outline" className="bg-white/80 text-deep-rose border-rose-gold font-montserrat text-xs">
               <Sparkles className="w-3 h-3 mr-1" />
-              Custom
+              Personalize
             </Badge>
           )}
         </div>
@@ -201,7 +210,12 @@ const ProductCard = ({
             className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300"
           >
             <ShoppingBag className="h-4 w-4 mr-2" />
-            {!inStock || stockQuantity <= 0 ? "Out of Stock" : "Add to Cart"}
+            {!inStock || stockQuantity <= 0 
+              ? "Out of Stock" 
+              : productType === 'custom' 
+                ? "Customize" 
+                : "Add to Cart"
+            }
           </Button>
         </div>
       </div>
@@ -267,7 +281,12 @@ const ProductCard = ({
           disabled={!inStock || stockQuantity <= 0}
         >
           <ShoppingBag className="h-4 w-4 mr-2" />
-          {!inStock || stockQuantity <= 0 ? "Out of Stock" : "Add to Cart"}
+          {!inStock || stockQuantity <= 0 
+            ? "Out of Stock" 
+            : productType === 'custom' 
+              ? "Customize" 
+              : "Add to Cart"
+          }
         </Button>
       </div>
     </Card>

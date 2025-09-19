@@ -1,3 +1,6 @@
+// Product type enum
+export type ProductType = 'standard' | 'custom';
+
 // Standardized Product interface for the entire application
 export interface Product {
   id: string;
@@ -9,6 +12,7 @@ export interface Product {
   images: string[];
   colors: string[];
   handle_types: string[];
+  product_type: ProductType;
   in_stock: boolean;
   stock_quantity: number;
   featured: boolean;
@@ -26,6 +30,7 @@ export interface CreateProductInput {
   images: string[];
   colors: string[];
   handle_types: string[];
+  product_type?: ProductType;
   in_stock?: boolean;
   stock_quantity?: number;
   featured?: boolean;
@@ -42,6 +47,7 @@ export interface UpdateProductInput {
   images?: string[];
   colors?: string[];
   handle_types?: string[];
+  product_type?: ProductType;
   in_stock?: boolean;
   stock_quantity?: number;
   featured?: boolean;
@@ -56,10 +62,12 @@ export interface ProductDisplay {
   description: string;
   images: string[];
   categoryId: string;
+  productType: ProductType;
   inStock: boolean;
   stockQuantity: number;
   colors: string[];
   handles: string[];
+  handleTypes: string[];
   features: string[];
   isNew?: boolean;
   isBestseller?: boolean;
@@ -68,7 +76,7 @@ export interface ProductDisplay {
 }
 
 // Transform database product to display format
-export const transformProduct = (dbProduct: Product): ProductDisplay => ({
+export const transformProduct = (dbProduct: any): ProductDisplay => ({
   id: dbProduct.id,
   name: dbProduct.name,
   price: Number(dbProduct.price),
@@ -76,13 +84,15 @@ export const transformProduct = (dbProduct: Product): ProductDisplay => ({
   description: dbProduct.description || 'Handcrafted with premium beads and elegant finishing.',
   images: dbProduct.images?.length ? dbProduct.images : [dbProduct.image_url || '/src/assets/product-black-bag.jpg'],
   categoryId: 'handbag', // Default category for now
+  productType: (dbProduct.product_type === 'custom' ? 'custom' : 'standard') as ProductType,
   inStock: dbProduct.in_stock,
   stockQuantity: dbProduct.stock_quantity || 0,
   colors: dbProduct.colors || [],
   handles: dbProduct.handle_types || [],
+  handleTypes: dbProduct.handle_types || [],
   features: ['Handmade with premium beads', 'Customizable with your name', 'Choice of handle types', 'Elegant gift packaging'],
   isNew: false, // Can be calculated based on created_at
   isBestseller: dbProduct.featured || false,
-  customizable: true, // All products are customizable
+  customizable: dbProduct.product_type === 'custom', // Only custom products are fully customizable
   featured: dbProduct.featured || false // Added for admin compatibility
 });

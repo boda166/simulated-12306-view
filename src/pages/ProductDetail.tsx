@@ -58,7 +58,16 @@ const ProductDetail = () => {
       navigate('/auth');
       return;
     }
-    
+
+    if (!product) return;
+
+    // For custom products, redirect to custom order form
+    if (product.productType === 'custom') {
+      navigate('/custom-orders');
+      return;
+    }
+
+    // For standard products, add to cart
     try {
       await addItem({
         productId: product.id,
@@ -315,9 +324,15 @@ const ProductDetail = () => {
                   size="lg" 
                   className="flex-1"
                   onClick={handleAddToCart}
+                  disabled={!product.inStock || product.stockQuantity <= 0}
                 >
                   <ShoppingBag className="w-5 h-5 mr-2" />
-                  Add to Cart
+                  {!product.inStock || product.stockQuantity <= 0 
+                    ? "Out of Stock" 
+                    : product.productType === 'custom' 
+                      ? "Create Custom Order" 
+                      : "Add to Cart"
+                  }
                 </Button>
                 <Button 
                   variant={isInWishlist(product.id) ? "default" : "outline"} 

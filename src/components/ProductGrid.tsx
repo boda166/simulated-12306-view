@@ -11,11 +11,13 @@ const ProductGrid = () => {
   const { products, isLoading } = useProducts();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedProductType, setSelectedProductType] = useState<string>('all');
   const [selectedColor, setSelectedColor] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
 
   const filteredProducts = products.filter(product => {
     if (selectedCategory !== 'all' && product.categoryId !== selectedCategory) return false;
+    if (selectedProductType !== 'all' && product.productType !== selectedProductType) return false;
     if (selectedColor !== 'all' && !product.colors.includes(selectedColor)) return false;
     return true;
   });
@@ -66,16 +68,37 @@ const ProductGrid = () => {
           <h2 className="text-4xl font-playfair font-bold text-deep-rose mb-4">
             Our Collection
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Discover our exquisite handcrafted beaded bags, each piece uniquely designed with love and attention to detail
+          <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
+            Discover our exquisite handcrafted beaded bags. Choose from our ready-to-order standard collection or create something truly unique with our personalized custom designs.
           </p>
+          <div className="flex justify-center gap-8 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-rose-gold rounded-full"></div>
+              <span>Standard: Basic customization (color, handle)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-deep-rose rounded-full"></div>
+              <span>Personalized: Full customization with names & special requests</span>
+            </div>
+          </div>
         </div>
 
         {/* Filters and Controls */}
         <div className="flex flex-col lg:flex-row justify-between items-center mb-8 gap-4">
-          <div className="flex flex-wrap gap-4">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+        <div className="flex flex-wrap gap-4">
+            <Select value={selectedProductType} onValueChange={setSelectedProductType}>
               <SelectTrigger className="w-40">
+                <SelectValue placeholder="Product Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Products</SelectItem>
+                <SelectItem value="standard">Standard</SelectItem>
+                <SelectItem value="custom">Personalized</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-36">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -150,6 +173,7 @@ const ProductGrid = () => {
                 variant="outline" 
                 onClick={() => {
                   setSelectedCategory('all');
+                  setSelectedProductType('all');
                   setSelectedColor('all');
                 }}
               >
@@ -172,10 +196,11 @@ const ProductGrid = () => {
                 originalPrice={product.originalPrice}
                 image={product.images[0] || '/placeholder.svg'}
                 category={product.categoryId}
+                productType={product.productType}
                 isNew={false}
                 isBestseller={false}
                 colors={product.colors}
-                customizable={true}
+                handleTypes={product.handleTypes}
                 inStock={product.inStock}
                 stockQuantity={product.stockQuantity}
               />
