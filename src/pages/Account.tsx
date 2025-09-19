@@ -44,7 +44,7 @@ interface Order {
 const Account = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, signOut } = useAuthStore();
-  const { orders, isLoading: ordersLoading } = useOrders();
+  const { orders, customOrders, isLoading: ordersLoading } = useOrders();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -125,15 +125,46 @@ const Account = () => {
     switch (status.toLowerCase()) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
+      case 'in_review':
+        return 'bg-blue-100 text-blue-800';
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'in_production':
+        return 'bg-purple-100 text-purple-800';
       case 'paid':
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-emerald-100 text-emerald-800';
       case 'cancelled':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  // Combine and sort orders by date
+  const allOrders: Array<{
+    id: string;
+    created_at: string;
+    status: string;
+    total_amount: number;
+    type: 'regular' | 'custom';
+    product_name?: string;
+    description?: string;
+    personalization_details?: any;
+    preferred_colors?: string[];
+    order_items?: any[];
+  }> = [
+    ...orders.map(order => ({ 
+      ...order, 
+      type: 'regular' as const,
+      total_amount: order.total_amount 
+    })),
+    ...customOrders.map(order => ({ 
+      ...order, 
+      type: 'custom' as const, 
+      total_amount: (order.final_price || order.estimated_price || 0) as number 
+    }))
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   if (isLoading) {
     return (
@@ -254,7 +285,7 @@ const Account = () => {
                   <CardDescription>View your past purchases</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {orders.length === 0 ? (
+                  {allOrders.length === 0 ? (
                     <div className="text-center py-8">
                       <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                       <p className="text-muted-foreground">No orders found</p>
@@ -268,48 +299,83 @@ const Account = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {orders.map((order) => (
-                        <div key={order.id} className="border rounded-lg p-4">
+                      {allOrders.map((order) => (
+                        <div key={`${order.type}-${order.id}`} className="border rounded-lg p-4">
                           <div className="flex justify-between items-start mb-3">
                             <div>
-                              <p className="font-semibold">Order #{order.id.slice(0, 8)}</p>
+                              <p className="font-semibold">
+                                {order.type === 'custom' ? 'Custom Order' : 'Order'} #{order.id.slice(0, 8)}
+                              </p>
                               <p className="text-sm text-muted-foreground">
                                 {new Date(order.created_at).toLocaleDateString()}
                               </p>
+                              {order.type === 'custom' && (
+                                <p className="text-sm text-rose-600 font-medium">
+                                  {order.product_name}
+                                </p>
+                              )}
                             </div>
                             <div className="text-right">
                               <Badge className={getStatusColor(order.status)}>
-                                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                {order.type === 'custom' 
+                                  ? order.status.replace('_', ' ').split(' ').map(word => 
+                                      word.charAt(0).toUpperCase() + word.slice(1)
+                                    ).join(' ')
+                                  : order.status.charAt(0).toUpperCase() + order.status.slice(1)
+                                }
                               </Badge>
                               <p className="text-lg font-semibold mt-1">
-                                ${order.total_amount.toFixed(2)}
+                                {order.total_amount > 0 ? (
+                                  `$${order.total_amount.toFixed(2)}`
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">Price pending</span>
+                                )}
                               </p>
                             </div>
                           </div>
                           
                           <div className="grid gap-2">
-                            {order.order_items.map((item) => (
-                              <div key={item.id} className="flex items-center gap-3 text-sm">
-                                <img 
-                                  src={item.products.image_url} 
-                                  alt={item.products.name}
-                                  className="w-10 h-10 object-cover rounded"
-                                />
-                                <div className="flex-1">
-                                  <p className="font-medium">{item.products.name}</p>
-                                  {item.custom_name && (
-                                    <p className="text-muted-foreground">Custom: {item.custom_name}</p>
-                                  )}
-                                  {item.selected_color && (
-                                    <p className="text-muted-foreground">Color: {item.selected_color}</p>
-                                  )}
+                            {order.type === 'regular' ? (
+                              order.order_items?.map((item) => (
+                                <div key={item.id} className="flex items-center gap-3 text-sm">
+                                  <img 
+                                    src={item.products.image_url} 
+                                    alt={item.products.name}
+                                    className="w-10 h-10 object-cover rounded"
+                                  />
+                                  <div className="flex-1">
+                                    <p className="font-medium">{item.products.name}</p>
+                                    {item.custom_name && (
+                                      <p className="text-muted-foreground">Custom: {item.custom_name}</p>
+                                    )}
+                                    {item.selected_color && (
+                                      <p className="text-muted-foreground">Color: {item.selected_color}</p>
+                                    )}
+                                  </div>
+                                  <div className="text-right">
+                                    <p>Qty: {item.quantity}</p>
+                                    <p>${item.price.toFixed(2)}</p>
+                                  </div>
                                 </div>
-                                <div className="text-right">
-                                  <p>Qty: {item.quantity}</p>
-                                  <p>${item.price.toFixed(2)}</p>
-                                </div>
+                              ))
+                            ) : (
+                              <div className="text-sm space-y-1">
+                                <p className="font-medium">{order.product_name}</p>
+                                {order.description && (
+                                  <p className="text-muted-foreground">{order.description}</p>
+                                )}
+                                {order.personalization_details?.custom_name && (
+                                  <p className="text-muted-foreground">
+                                    Custom Name: {order.personalization_details.custom_name}
+                                  </p>
+                                )}
+                                {order.preferred_colors && order.preferred_colors.length > 0 && (
+                                  <p className="text-muted-foreground">
+                                    Colors: {order.preferred_colors.join(', ')}
+                                  </p>
+                                )}
                               </div>
-                            ))}
+                            )}
                           </div>
                         </div>
                       ))}

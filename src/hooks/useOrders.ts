@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
+import { CustomOrder } from '@/types/customOrder';
 
 export interface OrderItem {
   id: string;
@@ -48,6 +49,7 @@ export interface CreateOrderInput {
 
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [customOrders, setCustomOrders] = useState<CustomOrder[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user, isAuthenticated, isAdmin } = useAuthStore();
@@ -55,6 +57,7 @@ export const useOrders = () => {
   const fetchOrders = useCallback(async (userId?: string) => {
     if (!isAuthenticated && !isAdmin) {
       setOrders([]);
+      setCustomOrders([]);
       setIsLoading(false);
       return;
     }
@@ -63,7 +66,8 @@ export const useOrders = () => {
       setIsLoading(true);
       setError(null);
 
-      let query = supabase
+      // Fetch regular orders
+      let ordersQuery = supabase
         .from('orders')
         .select(`
           *,
@@ -77,26 +81,43 @@ export const useOrders = () => {
         `)
         .order('created_at', { ascending: false });
 
+      // Fetch custom orders
+      let customOrdersQuery = supabase
+        .from('custom_orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
       // If not admin or specific user ID provided, filter by current user
       if (!isAdmin || userId) {
         const targetUserId = userId || user?.id;
         if (targetUserId) {
-          query = query.eq('user_id', targetUserId);
+          ordersQuery = ordersQuery.eq('user_id', targetUserId);
+          customOrdersQuery = customOrdersQuery.eq('user_id', targetUserId);
         } else {
           // No user ID available, return empty results
           setOrders([]);
+          setCustomOrders([]);
           return;
         }
       }
 
-      const { data, error } = await query;
+      const [ordersResponse, customOrdersResponse] = await Promise.all([
+        ordersQuery,
+        customOrdersQuery
+      ]);
 
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
+      if (ordersResponse.error) {
+        console.error('Orders error:', ordersResponse.error);
+        throw ordersResponse.error;
       }
 
-      setOrders(data || []);
+      if (customOrdersResponse.error) {
+        console.error('Custom orders error:', customOrdersResponse.error);
+        throw customOrdersResponse.error;
+      }
+
+      setOrders(ordersResponse.data || []);
+      setCustomOrders((customOrdersResponse.data || []) as CustomOrder[]);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch orders';
       setError(errorMessage);
@@ -108,6 +129,7 @@ export const useOrders = () => {
       }
       
       setOrders([]);
+      setCustomOrders([]);
     } finally {
       setIsLoading(false);
     }
@@ -229,7 +251,7 @@ export const useOrders = () => {
 
     fetchOrders();
 
-    // Subscribe to real-time changes only if authenticated
+      // Subscribe to real-time changes only if authenticated
     if (user) {
       const channel = supabase
         .channel('order-changes')
@@ -246,6 +268,19 @@ export const useOrders = () => {
             fetchOrders();
           }
         )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'custom_orders',
+            filter: isAdmin ? undefined : `user_id=eq.${user.id}`
+          },
+          () => {
+            console.log('Custom order change detected');
+            fetchOrders();
+          }
+        )
         .subscribe();
 
       return () => {
@@ -256,6 +291,7 @@ export const useOrders = () => {
 
   return {
     orders,
+    customOrders,
     isLoading,
     error,
     fetchOrders,
