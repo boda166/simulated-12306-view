@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import AdminOrderDetails from '@/components/AdminOrderDetails';
 
 const OrderManagement = () => {
-  const { orders, isLoading, updateOrderStatus } = useOrders();
+  const { orders, isLoading, updateOrderStatus, updateOrderShipping } = useOrders();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -32,6 +32,18 @@ const OrderManagement = () => {
       await updateOrderStatus(orderId, newStatus);
     } catch (error) {
       console.error('Error updating order status:', error);
+    }
+  };
+
+  const handleShippingUpdate = async (orderId: string, shippingData: {
+    tracking_number?: string;
+    carrier?: string;
+    shipping_status?: string;
+  }) => {
+    try {
+      await updateOrderShipping(orderId, shippingData);
+    } catch (error) {
+      console.error('Error updating shipping info:', error);
     }
   };
 
@@ -231,6 +243,7 @@ const OrderManagement = () => {
         <AdminOrderDetails
           order={selectedOrder}
           onUpdateStatus={handleStatusUpdate}
+          onUpdateShipping={handleShippingUpdate}
           onClose={() => setSelectedOrder(null)}
         />
       )}

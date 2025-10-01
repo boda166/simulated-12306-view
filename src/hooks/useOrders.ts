@@ -27,6 +27,11 @@ export interface Order {
   payment_method?: string;
   contact_info?: any;
   shipping_address?: any;
+  tracking_number?: string;
+  carrier?: string;
+  shipping_status?: string;
+  shipped_at?: string;
+  delivered_at?: string;
   created_at: string;
   updated_at: string;
   order_items?: OrderItem[];
@@ -216,6 +221,50 @@ export const useOrders = () => {
     }
   }, [isAdmin, fetchOrders]);
 
+  const updateOrderShipping = useCallback(async (
+    orderId: string, 
+    shippingData: {
+      tracking_number?: string;
+      carrier?: string;
+      shipping_status?: string;
+    }
+  ) => {
+    if (!isAdmin) {
+      toast.error('Only admins can update shipping information');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const updateData: any = { ...shippingData };
+      
+      // Auto-set timestamps based on status
+      if (shippingData.shipping_status === 'shipped' && !updateData.shipped_at) {
+        updateData.shipped_at = new Date().toISOString();
+      }
+      if (shippingData.shipping_status === 'delivered' && !updateData.delivered_at) {
+        updateData.delivered_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('orders')
+        .update(updateData)
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      toast.success('Shipping information updated successfully');
+      await fetchOrders();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update shipping information';
+      toast.error(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAdmin, fetchOrders]);
+
   const getOrderById = useCallback(async (orderId: string) => {
     try {
       const { data, error } = await supabase
@@ -297,6 +346,7 @@ export const useOrders = () => {
     fetchOrders,
     createOrder,
     updateOrderStatus,
+    updateOrderShipping,
     getOrderById,
     refreshOrders: fetchOrders
   };

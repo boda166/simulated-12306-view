@@ -375,6 +375,37 @@ const Admin = () => {
     }
   };
 
+  const handleUpdateShipping = async (orderId: string, shippingData: {
+    tracking_number?: string;
+    carrier?: string;
+    shipping_status?: string;
+  }) => {
+    try {
+      const updateData: any = { ...shippingData };
+      
+      // Auto-set timestamps based on status
+      if (shippingData.shipping_status === 'shipped' && !updateData.shipped_at) {
+        updateData.shipped_at = new Date().toISOString();
+      }
+      if (shippingData.shipping_status === 'delivered' && !updateData.delivered_at) {
+        updateData.delivered_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('orders')
+        .update(updateData)
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      toast.success('Shipping information updated successfully');
+      fetchAdminData();
+    } catch (error) {
+      console.error('Error updating shipping info:', error);
+      toast.error('Failed to update shipping information');
+    }
+  };
+
   const statsArray = [
     { 
       title: 'Total Sales', 
@@ -770,6 +801,7 @@ const Admin = () => {
           <AdminOrderDetails
             order={selectedOrder as any}
             onUpdateStatus={handleUpdateOrderStatus}
+            onUpdateShipping={handleUpdateShipping}
             onClose={() => setSelectedOrder(null)}
           />
         )}

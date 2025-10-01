@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Mail, Phone, Edit, Package, CreditCard, Settings } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { User, Mail, Phone, Edit, Package, CreditCard, Settings, ChevronDown, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -153,6 +154,11 @@ const Account = () => {
     personalization_details?: any;
     preferred_colors?: string[];
     order_items?: any[];
+    tracking_number?: string;
+    carrier?: string;
+    shipping_status?: string;
+    shipped_at?: string;
+    delivered_at?: string;
   }> = [
     ...orders.map(order => ({ 
       ...order, 
@@ -300,84 +306,142 @@ const Account = () => {
                   ) : (
                     <div className="space-y-4">
                       {allOrders.map((order) => (
-                        <div key={`${order.type}-${order.id}`} className="border rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <p className="font-semibold">
-                                {order.type === 'custom' ? 'Custom Order' : 'Order'} #{order.id.slice(0, 8)}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(order.created_at).toLocaleDateString()}
-                              </p>
-                              {order.type === 'custom' && (
-                                <p className="text-sm text-rose-600 font-medium">
-                                  {order.product_name}
-                                </p>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <Badge className={getStatusColor(order.status)}>
-                                {order.type === 'custom' 
-                                  ? order.status.replace('_', ' ').split(' ').map(word => 
-                                      word.charAt(0).toUpperCase() + word.slice(1)
-                                    ).join(' ')
-                                  : order.status.charAt(0).toUpperCase() + order.status.slice(1)
-                                }
-                              </Badge>
-                              <p className="text-lg font-semibold mt-1">
-                                {order.total_amount > 0 ? (
-                                  `$${order.total_amount.toFixed(2)}`
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">Price pending</span>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="grid gap-2">
-                            {order.type === 'regular' ? (
-                              order.order_items?.map((item) => (
-                                <div key={item.id} className="flex items-center gap-3 text-sm">
-                                  <img 
-                                    src={item.products.image_url} 
-                                    alt={item.products.name}
-                                    className="w-10 h-10 object-cover rounded"
-                                  />
-                                  <div className="flex-1">
-                                    <p className="font-medium">{item.products.name}</p>
-                                    {item.custom_name && (
-                                      <p className="text-muted-foreground">Custom: {item.custom_name}</p>
-                                    )}
-                                    {item.selected_color && (
-                                      <p className="text-muted-foreground">Color: {item.selected_color}</p>
-                                    )}
-                                  </div>
-                                  <div className="text-right">
-                                    <p>Qty: {item.quantity}</p>
-                                    <p>${item.price.toFixed(2)}</p>
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="text-sm space-y-1">
-                                <p className="font-medium">{order.product_name}</p>
-                                {order.description && (
-                                  <p className="text-muted-foreground">{order.description}</p>
-                                )}
-                                {order.personalization_details?.custom_name && (
-                                  <p className="text-muted-foreground">
-                                    Custom Name: {order.personalization_details.custom_name}
+                        <Collapsible key={`${order.type}-${order.id}`}>
+                          <div className="border rounded-lg p-4">
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-semibold">
+                                    {order.type === 'custom' ? 'Custom Order' : 'Order'} #{order.id.slice(0, 8)}
                                   </p>
-                                )}
-                                {order.preferred_colors && order.preferred_colors.length > 0 && (
-                                  <p className="text-muted-foreground">
-                                    Colors: {order.preferred_colors.join(', ')}
+                                  {order.type === 'regular' && (order.tracking_number || order.carrier) && (
+                                    <CollapsibleTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-6 px-2">
+                                        <Truck className="w-3 h-3 mr-1" />
+                                        Track
+                                        <ChevronDown className="w-3 h-3 ml-1" />
+                                      </Button>
+                                    </CollapsibleTrigger>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {new Date(order.created_at).toLocaleDateString()}
+                                </p>
+                                {order.type === 'custom' && (
+                                  <p className="text-sm text-rose-600 font-medium">
+                                    {order.product_name}
                                   </p>
                                 )}
                               </div>
+                              <div className="text-right">
+                                <Badge className={getStatusColor(order.status)}>
+                                  {order.type === 'custom' 
+                                    ? order.status.replace('_', ' ').split(' ').map(word => 
+                                        word.charAt(0).toUpperCase() + word.slice(1)
+                                      ).join(' ')
+                                    : order.status.charAt(0).toUpperCase() + order.status.slice(1)
+                                  }
+                                </Badge>
+                                <p className="text-lg font-semibold mt-1">
+                                  {order.total_amount > 0 ? (
+                                    `$${order.total_amount.toFixed(2)}`
+                                  ) : (
+                                    <span className="text-muted-foreground text-sm">Price pending</span>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid gap-2">
+                              {order.type === 'regular' ? (
+                                order.order_items?.map((item) => (
+                                  <div key={item.id} className="flex items-center gap-3 text-sm">
+                                    <img 
+                                      src={item.products.image_url} 
+                                      alt={item.products.name}
+                                      className="w-10 h-10 object-cover rounded"
+                                    />
+                                    <div className="flex-1">
+                                      <p className="font-medium">{item.products.name}</p>
+                                      {item.custom_name && (
+                                        <p className="text-muted-foreground">Custom: {item.custom_name}</p>
+                                      )}
+                                      {item.selected_color && (
+                                        <p className="text-muted-foreground">Color: {item.selected_color}</p>
+                                      )}
+                                    </div>
+                                    <div className="text-right">
+                                      <p>Qty: {item.quantity}</p>
+                                      <p>${item.price.toFixed(2)}</p>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-sm space-y-1">
+                                  <p className="font-medium">{order.product_name}</p>
+                                  {order.description && (
+                                    <p className="text-muted-foreground">{order.description}</p>
+                                  )}
+                                  {order.personalization_details?.custom_name && (
+                                    <p className="text-muted-foreground">
+                                      Custom Name: {order.personalization_details.custom_name}
+                                    </p>
+                                  )}
+                                  {order.preferred_colors && order.preferred_colors.length > 0 && (
+                                    <p className="text-muted-foreground">
+                                      Colors: {order.preferred_colors.join(', ')}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {order.type === 'regular' && (order.tracking_number || order.carrier || order.shipping_status) && (
+                              <CollapsibleContent className="mt-4 pt-4 border-t">
+                                <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                                  <p className="text-sm font-semibold flex items-center gap-2">
+                                    <Truck className="w-4 h-4" />
+                                    Shipping Information
+                                  </p>
+                                  {order.shipping_status && (
+                                    <div>
+                                      <span className="text-sm text-muted-foreground">Status: </span>
+                                      <span className="text-sm font-medium">
+                                        {order.shipping_status.replace('_', ' ').split(' ').map(word => 
+                                          word.charAt(0).toUpperCase() + word.slice(1)
+                                        ).join(' ')}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {order.carrier && (
+                                    <div>
+                                      <span className="text-sm text-muted-foreground">Carrier: </span>
+                                      <span className="text-sm">{order.carrier}</span>
+                                    </div>
+                                  )}
+                                  {order.tracking_number && (
+                                    <div>
+                                      <span className="text-sm text-muted-foreground">Tracking: </span>
+                                      <span className="text-sm font-mono">{order.tracking_number}</span>
+                                    </div>
+                                  )}
+                                  {order.shipped_at && (
+                                    <div>
+                                      <span className="text-sm text-muted-foreground">Shipped: </span>
+                                      <span className="text-sm">{new Date(order.shipped_at).toLocaleDateString()}</span>
+                                    </div>
+                                  )}
+                                  {order.delivered_at && (
+                                    <div>
+                                      <span className="text-sm text-muted-foreground">Delivered: </span>
+                                      <span className="text-sm text-green-600">{new Date(order.delivered_at).toLocaleDateString()}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </CollapsibleContent>
                             )}
                           </div>
-                        </div>
+                        </Collapsible>
                       ))}
                     </div>
                   )}

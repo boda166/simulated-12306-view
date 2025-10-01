@@ -3,19 +3,26 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Package, User, MapPin, Phone, Mail } from 'lucide-react';
+import { X, Package, User, MapPin, Phone, Mail, Truck } from 'lucide-react';
 import { Order } from '@/hooks/useOrders';
+import { ShippingManagementDialog } from './ShippingManagementDialog';
 import { toast } from 'sonner';
 
 interface AdminOrderDetailsProps {
   order: Order;
   onUpdateStatus: (orderId: string, status: Order['status']) => Promise<void>;
+  onUpdateShipping: (orderId: string, shippingData: {
+    tracking_number?: string;
+    carrier?: string;
+    shipping_status?: string;
+  }) => Promise<void>;
   onClose: () => void;
 }
 
-const AdminOrderDetails = ({ order, onUpdateStatus, onClose }: AdminOrderDetailsProps) => {
+const AdminOrderDetails = ({ order, onUpdateStatus, onUpdateShipping, onClose }: AdminOrderDetailsProps) => {
   const [status, setStatus] = useState(order.status);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showShippingDialog, setShowShippingDialog] = useState(false);
 
   const handleStatusUpdate = async (newStatus: Order['status']) => {
     setIsUpdating(true);
@@ -53,28 +60,49 @@ const AdminOrderDetails = ({ order, onUpdateStatus, onClose }: AdminOrderDetails
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Order Status */}
-          <div className="flex items-center justify-between">
+          {/* Order Status & Shipping */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Current Status</p>
+              <p className="text-sm text-muted-foreground mb-2">Current Status</p>
               <Badge className={getStatusColor(status)}>
                 {status.charAt(0).toUpperCase() + status.slice(1)}
               </Badge>
+              <div className="mt-3">
+                <p className="text-sm text-muted-foreground mb-2">Update Status</p>
+                <Select value={status} onValueChange={handleStatusUpdate} disabled={isUpdating}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border">
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="shipped">Shipped</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Update Status</p>
-              <Select value={status} onValueChange={handleStatusUpdate} disabled={isUpdating}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
+
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Shipping Management</p>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setShowShippingDialog(true)}
+              >
+                <Truck className="w-4 h-4 mr-2" />
+                Manage Shipping
+              </Button>
+              {order.tracking_number && (
+                <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Tracking</p>
+                  <p className="text-sm font-mono">{order.tracking_number}</p>
+                  {order.carrier && (
+                    <p className="text-xs text-muted-foreground mt-1">{order.carrier}</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -150,6 +178,13 @@ const AdminOrderDetails = ({ order, onUpdateStatus, onClose }: AdminOrderDetails
           </div>
         </CardContent>
       </Card>
+
+      <ShippingManagementDialog
+        order={order}
+        open={showShippingDialog}
+        onOpenChange={setShowShippingDialog}
+        onUpdate={onUpdateShipping}
+      />
     </div>
   );
 };
