@@ -45,6 +45,64 @@ export const useAdminCustomOrders = () => {
     }
   }, [isAdmin]);
 
+  const convertToOrder = useCallback(async (customOrder: CustomOrder) => {
+    if (!isAdmin) {
+      toast.error('Admin access required');
+      return;
+    }
+
+    if (!customOrder.final_price) {
+      toast.error('Please set a final price before converting to order');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      // Create a regular order from the custom order
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert([{
+          user_id: customOrder.user_id,
+          total_amount: customOrder.final_price,
+          status: 'pending',
+          payment_method: 'custom_order',
+          contact_info: {
+            note: `Custom order: ${customOrder.product_name}`
+          } as any,
+          shipping_address: {
+            delivery_date: customOrder.delivery_date,
+            personalization: customOrder.personalization_details
+          } as any
+        }])
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Link the custom order to the regular order
+      const { error: updateError } = await supabase
+        .from('custom_orders')
+        .update({ 
+          converted_order_id: order.id,
+          status: 'in_production'
+        })
+        .eq('id', customOrder.id);
+
+      if (updateError) throw updateError;
+
+      toast.success('Custom order converted to regular order!');
+      await fetchAllCustomOrders();
+      return order;
+    } catch (err) {
+      console.error('Error converting custom order:', err);
+      toast.error('Failed to convert custom order');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAdmin, fetchAllCustomOrders]);
+
   const updateCustomOrderStatus = useCallback(async (updateData: UpdateCustomOrderInput) => {
     if (!isAdmin) {
       toast.error('Admin access required');
@@ -138,6 +196,7 @@ export const useAdminCustomOrders = () => {
     customOrders,
     isLoading,
     error,
+    convertToOrder,
     updateCustomOrderStatus,
     refreshCustomOrders: fetchAllCustomOrders
   };

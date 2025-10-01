@@ -14,6 +14,7 @@ export interface CustomOrder {
   admin_notes?: string;
   estimated_price?: number;
   final_price?: number;
+  converted_order_id?: string;
   created_at: string;
   updated_at: string;
 }

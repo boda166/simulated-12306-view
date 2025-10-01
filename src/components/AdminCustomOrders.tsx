@@ -7,13 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Eye, Edit3, DollarSign } from 'lucide-react';
+import { Eye, Edit3, DollarSign, Package } from 'lucide-react';
 import { useAdminCustomOrders } from '@/hooks/useAdminCustomOrders';
 import { CustomOrder, getStatusLabel, getStatusColor, CustomOrderStatus } from '@/types/customOrder';
 import { toast } from 'sonner';
 
 const AdminCustomOrders = () => {
-  const { customOrders, isLoading, updateCustomOrderStatus } = useAdminCustomOrders();
+  const { customOrders, isLoading, convertToOrder, updateCustomOrderStatus } = useAdminCustomOrders();
   const [selectedOrder, setSelectedOrder] = useState<CustomOrder | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -52,6 +52,24 @@ const AdminCustomOrders = () => {
         final_price: editForm.final_price ? parseFloat(editForm.final_price) : undefined
       });
       setIsEditOpen(false);
+    } catch (error) {
+      // Error handled in hook
+    }
+  };
+
+  const handleConvertToOrder = async (order: CustomOrder) => {
+    if (!order.final_price) {
+      toast.error('Please set a final price before converting to order');
+      return;
+    }
+    
+    if (order.converted_order_id) {
+      toast.info('This custom order has already been converted');
+      return;
+    }
+
+    try {
+      await convertToOrder(order);
     } catch (error) {
       // Error handled in hook
     }
@@ -103,6 +121,11 @@ const AdminCustomOrders = () => {
                     <Badge className={getStatusColor(order.status)}>
                       {getStatusLabel(order.status)}
                     </Badge>
+                    {order.converted_order_id && (
+                      <Badge variant="secondary">
+                        Converted to Order
+                      </Badge>
+                    )}
                     <div className="flex gap-1">
                       <Button
                         variant="ghost"
@@ -118,6 +141,16 @@ const AdminCustomOrders = () => {
                       >
                         <Edit3 className="w-4 h-4" />
                       </Button>
+                      {!order.converted_order_id && order.final_price && order.status === 'approved' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleConvertToOrder(order)}
+                          title="Convert to regular order"
+                        >
+                          <Package className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

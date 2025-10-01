@@ -62,6 +62,7 @@ export type Database = {
         Row: {
           admin_notes: string | null
           budget_range: string | null
+          converted_order_id: string | null
           created_at: string
           delivery_date: string | null
           description: string | null
@@ -80,6 +81,7 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           budget_range?: string | null
+          converted_order_id?: string | null
           created_at?: string
           delivery_date?: string | null
           description?: string | null
@@ -98,6 +100,7 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           budget_range?: string | null
+          converted_order_id?: string | null
           created_at?: string
           delivery_date?: string | null
           description?: string | null
@@ -113,7 +116,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "custom_orders_converted_order_id_fkey"
+            columns: ["converted_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
