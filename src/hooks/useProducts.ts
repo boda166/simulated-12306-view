@@ -111,6 +111,31 @@ export const useProducts = () => {
     }
   }, []);
 
+  const updateProductStock = useCallback(async (productId: string, stockData: { stock_quantity: number; in_stock: boolean }) => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .update({
+          stock_quantity: stockData.stock_quantity,
+          in_stock: stockData.in_stock
+        })
+        .eq('id', productId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const updatedProduct = transformProduct(data);
+      setProducts(prev => prev.map(p => p.id === productId ? updatedProduct : p));
+      toast.success('Stock updated successfully');
+      return updatedProduct;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update stock';
+      toast.error(errorMessage);
+      throw err;
+    }
+  }, []);
+
   // Set up real-time subscription
   useEffect(() => {
     fetchProducts();
@@ -157,6 +182,7 @@ export const useProducts = () => {
     createProduct,
     updateProduct,
     deleteProduct,
+    updateProductStock,
     refreshProducts: fetchProducts
   };
 };

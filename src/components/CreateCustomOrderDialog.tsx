@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { useCustomOrders } from '@/hooks/useCustomOrders';
 import { CreateCustomOrderInput, PersonalizationDetails } from '@/types/customOrder';
 import { toast } from 'sonner';
+import { customOrderSchema } from '@/utils/customOrderValidation';
 
 interface CreateCustomOrderDialogProps {
   open: boolean;
@@ -71,20 +72,34 @@ export const CreateCustomOrderDialog = ({ open, onOpenChange }: CreateCustomOrde
   };
 
   const handleSubmit = async () => {
-    if (!productName.trim()) {
-      toast.error('Please enter a product name');
+    // Prepare data for validation
+    const personalizationDetails: PersonalizationDetails = {
+      custom_name: customName || undefined,
+      font_style: fontStyle || undefined,
+      placement: placement || undefined,
+      special_requests: specialRequests || undefined
+    };
+
+    const orderData = {
+      product_name: productName,
+      description: description || '',
+      personalization_details: personalizationDetails,
+      preferred_colors: selectedColors.length > 0 ? selectedColors : undefined,
+      preferred_handles: selectedHandles.length > 0 ? selectedHandles : undefined,
+      budget_range: budgetRange || '',
+      delivery_date: deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : ''
+    };
+
+    // Validate with schema
+    const validation = customOrderSchema.safeParse(orderData);
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
     try {
-      const personalizationDetails: PersonalizationDetails = {
-        custom_name: customName || undefined,
-        font_style: fontStyle || undefined,
-        placement: placement || undefined,
-        special_requests: specialRequests || undefined
-      };
-
-      const orderData: CreateCustomOrderInput = {
+      const finalOrderData: CreateCustomOrderInput = {
         product_name: productName,
         description: description || undefined,
         personalization_details: personalizationDetails,
@@ -94,7 +109,7 @@ export const CreateCustomOrderDialog = ({ open, onOpenChange }: CreateCustomOrde
         delivery_date: deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : undefined
       };
 
-      await createCustomOrder(orderData);
+      await createCustomOrder(finalOrderData);
       resetForm();
       onOpenChange(false);
     } catch (error) {

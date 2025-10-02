@@ -24,7 +24,8 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  XCircle
+  XCircle,
+  BarChart3
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,6 +38,8 @@ import AdminCustomers from '@/components/AdminCustomers';
 import AdminAnalytics from '@/components/AdminAnalytics';
 import OrderManagement from '@/components/OrderManagement';
 import AdminCustomOrders from '@/components/AdminCustomOrders';
+import { StockManagementDialog } from '@/components/StockManagementDialog';
+import { useProducts } from '@/hooks/useProducts';
 
 interface Order {
   id: string;
@@ -101,6 +104,9 @@ const Admin = () => {
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [stockManagementProduct, setStockManagementProduct] = useState<Product | null>(null);
+  const [showStockDialog, setShowStockDialog] = useState(false);
+  const { updateProductStock } = useProducts();
   
   // Search and Filter States
   const [orderSearch, setOrderSearch] = useState('');
@@ -168,7 +174,7 @@ const Admin = () => {
         images: product.images || (product.image_url ? [product.image_url] : []),
         categoryId: 'handbag',
         inStock: product.in_stock ?? true,
-        stockQuantity: 10, // Default stock quantity - could be enhanced with real inventory
+        stockQuantity: product.stock_quantity ?? 10,
         colors: product.colors || [],
         handles: product.handle_types || [],
         features: [],
@@ -341,7 +347,7 @@ const Admin = () => {
 
   const handleDeleteProduct = async (productId: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
-
+    
     try {
       const { error } = await supabase
         .from('products')
@@ -355,6 +361,15 @@ const Admin = () => {
     } catch (error) {
       console.error('Error deleting product:', error);
       toast.error('Failed to delete product');
+    }
+  };
+
+  const handleUpdateStock = async (productId: string, stockData: { stock_quantity: number; in_stock: boolean }) => {
+    try {
+      await updateProductStock(productId, stockData);
+      fetchAdminData();
+    } catch (error) {
+      // Error handled in hook
     }
   };
 
@@ -724,27 +739,38 @@ const Admin = () => {
                              Created: {product.createdAt ? new Date(product.createdAt).toLocaleDateString() : 'Unknown'}
                            </p>
                         </div>
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            onClick={() => {
-                              setEditingProduct(product);
-                              setShowProductForm(true);
-                            }}
-                            title="Edit Product"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            onClick={() => handleDeleteProduct(product.id)}
-                            title="Delete Product"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                         <div className="flex gap-2">
+                           <Button 
+                             variant="outline" 
+                             size="icon"
+                             onClick={() => {
+                               setStockManagementProduct(product);
+                               setShowStockDialog(true);
+                             }}
+                             title="Manage Stock"
+                           >
+                             <BarChart3 className="w-4 h-4" />
+                           </Button>
+                           <Button 
+                             variant="outline" 
+                             size="icon"
+                             onClick={() => {
+                               setEditingProduct(product);
+                               setShowProductForm(true);
+                             }}
+                             title="Edit Product"
+                           >
+                             <Edit className="w-4 h-4" />
+                           </Button>
+                           <Button 
+                             variant="outline" 
+                             size="icon"
+                             onClick={() => handleDeleteProduct(product.id)}
+                             title="Delete Product"
+                           >
+                             <Trash2 className="w-4 h-4" />
+                           </Button>
+                         </div>
                       </div>
                     ))
                   )}
@@ -805,6 +831,19 @@ const Admin = () => {
             onClose={() => setSelectedOrder(null)}
           />
         )}
+
+        {/* Stock Management Dialog */}
+        <StockManagementDialog
+          product={stockManagementProduct ? {
+            id: stockManagementProduct.id,
+            name: stockManagementProduct.name,
+            stock_quantity: stockManagementProduct.stockQuantity,
+            in_stock: stockManagementProduct.inStock
+          } : null}
+          open={showStockDialog}
+          onOpenChange={setShowStockDialog}
+          onUpdate={handleUpdateStock}
+        />
       </main>
 
       <Footer />

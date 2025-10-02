@@ -14,6 +14,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useCart } from '@/hooks/useCart';
 import { useOrders } from '@/hooks/useOrders';
 import { toast } from 'sonner';
+import { checkoutSchema } from '@/utils/checkoutValidation';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -73,10 +74,11 @@ const Checkout = () => {
       return;
     }
     
-    // Validate required fields
-    if (!formData.email || !formData.firstName || !formData.lastName || 
-        !formData.phone || !formData.address || !formData.city || !formData.postalCode) {
-      toast.error('Please fill in all required fields.');
+    // Validate form data with schema
+    const validation = checkoutSchema.safeParse(formData);
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
     

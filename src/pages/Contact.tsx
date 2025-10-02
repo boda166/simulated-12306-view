@@ -8,6 +8,7 @@ import { MapPin, Phone, Mail, Clock, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { contactSchema } from '@/utils/contactValidation';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -19,6 +20,14 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form data
+    const validation = contactSchema.safeParse(formData);
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
+      return;
+    }
     
     try {
       // Here you could send to an API endpoint or email service
