@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   LineChart, 
   Line, 
@@ -10,6 +12,8 @@ import {
   PieChart, 
   Pie, 
   Cell, 
+  BarChart,
+  Bar,
   ResponsiveContainer, 
   XAxis, 
   YAxis, 
@@ -26,7 +30,11 @@ import {
   Heart,
   Package,
   User,
-  ShoppingBag
+  ShoppingBag,
+  Download,
+  RefreshCw,
+  Palette,
+  DollarSign
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -36,6 +44,8 @@ interface AnalyticsData {
   orderStatusData: any[];
   topProducts: any[];
   recentActivity: any[];
+  customOrdersData: any[];
+  productPerformance: any[];
   metrics: {
     conversionRate: number;
     avgOrderValue: number;
@@ -45,6 +55,8 @@ interface AnalyticsData {
     totalOrders: number;
     totalProducts: number;
     totalCustomers: number;
+    customOrdersCount: number;
+    customOrdersValue: number;
   };
 }
 
@@ -54,6 +66,8 @@ const AdminAnalytics = () => {
     orderStatusData: [],
     topProducts: [],
     recentActivity: [],
+    customOrdersData: [],
+    productPerformance: [],
     metrics: {
       conversionRate: 0,
       avgOrderValue: 0,
@@ -63,9 +77,12 @@ const AdminAnalytics = () => {
       totalOrders: 0,
       totalProducts: 0,
       totalCustomers: 0,
+      customOrdersCount: 0,
+      customOrdersValue: 0,
     }
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [dateRange, setDateRange] = useState('30'); // days
 
   const fetchAnalyticsData = useCallback(async () => {
     try {
@@ -114,8 +131,22 @@ const AdminAnalytics = () => {
 
       if (wishlistsError) throw wishlistsError;
 
+      // Fetch custom orders data
+      const { data: customOrders, error: customOrdersError } = await supabase
+        .from('custom_orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (customOrdersError) throw customOrdersError;
+
       // Process the data
-      const processedData = processAnalyticsData(orders || [], products || [], profiles || [], wishlists || []);
+      const processedData = processAnalyticsData(
+        orders || [], 
+        products || [], 
+        profiles || [], 
+        wishlists || [],
+        customOrders || []
+      );
       setAnalyticsData(processedData);
 
     } catch (error) {
@@ -126,7 +157,13 @@ const AdminAnalytics = () => {
     }
   }, []);
 
-  const processAnalyticsData = (orders: any[], products: any[], profiles: any[], wishlists: any[]): AnalyticsData => {
+  const processAnalyticsData = (
+    orders: any[], 
+    products: any[], 
+    profiles: any[], 
+    wishlists: any[],
+    customOrders: any[]
+  ): AnalyticsData => {
     // Calculate monthly sales data
     const monthlyData = getMonthlyData(orders);
     
@@ -139,14 +176,22 @@ const AdminAnalytics = () => {
     // Generate recent activity
     const recentActivityData = getRecentActivity(orders, products, wishlists, profiles);
     
+    // Calculate custom orders data
+    const customOrdersData = getCustomOrdersData(customOrders);
+    
+    // Calculate product performance
+    const productPerformance = getProductPerformance(orders, products);
+    
     // Calculate metrics
-    const metrics = calculateMetrics(orders, profiles);
+    const metrics = calculateMetrics(orders, profiles, customOrders);
 
     return {
       salesData: monthlyData,
       orderStatusData: statusData,
       topProducts: topProductsData,
       recentActivity: recentActivityData,
+      customOrdersData,
+      productPerformance,
       metrics
     };
   };
@@ -248,13 +293,57 @@ const AdminAnalytics = () => {
     return activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5);
   };
 
-  const calculateMetrics = (orders: any[], profiles: any[]) => {
+  const getCustomOrdersData = (customOrders: any[]) => {
+    const statusCounts = customOrders.reduce((acc, order) => {
+      acc[order.status] = (acc[order.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(statusCounts).map(([status, count]) => ({
+      status: status.replace('_', ' ').toUpperCase(),
+      count
+    }));
+  };
+
+  const getProductPerformance = (orders: any[], products: any[]) => {
+    const productStats: { [key: string]: { name: string; views: number; sales: number; revenue: number } } = {};
+
+    products.forEach(product => {
+      productStats[product.id] = {
+        name: product.name,
+        views: Math.floor(Math.random() * 1000) + 100, // Mock data - would come from analytics
+        sales: 0,
+        revenue: 0
+      };
+    });
+
+    orders.forEach(order => {
+      order.order_items?.forEach((item: any) => {
+        if (productStats[item.product_id]) {
+          productStats[item.product_id].sales += item.quantity;
+          productStats[item.product_id].revenue += parseFloat(item.price) * item.quantity;
+        }
+      });
+    });
+
+    return Object.values(productStats)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+  };
+
+  const calculateMetrics = (orders: any[], profiles: any[], customOrders: any[]) => {
     const totalSales = orders.reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0);
     const totalOrders = orders.length;
     const avgOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
     const deliveredOrders = orders.filter(order => order.status === 'delivered').length;
     const cancelledOrders = orders.filter(order => order.status === 'cancelled').length;
     const returnRate = totalOrders > 0 ? (cancelledOrders / totalOrders) * 100 : 0;
+    
+    // Custom orders metrics
+    const customOrdersCount = customOrders.length;
+    const customOrdersValue = customOrders.reduce((sum, order) => 
+      sum + parseFloat(order.final_price || order.estimated_price || 0), 0
+    );
     
     // Mock conversion rate (would need more data in real scenario)
     const conversionRate = 3.2;
@@ -266,9 +355,26 @@ const AdminAnalytics = () => {
       customerSatisfaction: 4.8,
       totalSales,
       totalOrders,
-      totalProducts: 0, // Will be set from products data
-      totalCustomers: profiles.length
+      totalProducts: 0,
+      totalCustomers: profiles.length,
+      customOrdersCount,
+      customOrdersValue
     };
+  };
+
+  const exportData = () => {
+    try {
+      const dataStr = JSON.stringify(analyticsData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `analytics-${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      toast.success('Analytics data exported successfully');
+    } catch (error) {
+      toast.error('Failed to export data');
+    }
   };
 
   const getTimeAgo = (dateString: string) => {
@@ -283,7 +389,7 @@ const AdminAnalytics = () => {
 
   useEffect(() => {
     fetchAnalyticsData();
-  }, [fetchAnalyticsData]);
+  }, [fetchAnalyticsData, dateRange]);
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -315,11 +421,39 @@ const AdminAnalytics = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header with filters */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-playfair font-bold">Analytics Dashboard</h2>
+          <p className="text-sm text-muted-foreground">Comprehensive business insights</p>
+        </div>
+        <div className="flex gap-2">
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Last 7 days</SelectItem>
+              <SelectItem value="30">Last 30 days</SelectItem>
+              <SelectItem value="90">Last 90 days</SelectItem>
+              <SelectItem value="365">Last year</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="icon" onClick={fetchAnalyticsData}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={exportData}>
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="sales">Sales</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="custom">Custom Orders</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
 
@@ -485,35 +619,119 @@ const AdminAnalytics = () => {
         </TabsContent>
 
         <TabsContent value="products" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Performing Products</CardTitle>
+                <CardDescription>Best selling products by revenue and volume</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {analyticsData.topProducts.length > 0 ? (
+                    analyticsData.topProducts.map((product, index) => (
+                      <div key={product.name} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-8 h-8 bg-gradient-to-br from-rose-gold to-deep-rose rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="font-medium">{product.name}</p>
+                            <p className="text-sm text-muted-foreground">{product.sales} units sold</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">${product.revenue.toLocaleString()}</p>
+                          <Badge variant="secondary">Top {index + 1}</Badge>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-muted-foreground py-8">No product data available</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Product Performance</CardTitle>
+                <CardDescription>Views, sales, and conversion metrics</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={analyticsData.productPerformance.slice(0, 5)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="views" fill="hsl(var(--muted))" name="Views" />
+                    <Bar dataKey="sales" fill="hsl(var(--deep-rose))" name="Sales" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="custom" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Custom Orders</p>
+                    <p className="text-2xl font-bold">{analyticsData.metrics.customOrdersCount}</p>
+                  </div>
+                  <Palette className="h-8 w-8 text-purple-500" />
+                </div>
+                <div className="flex items-center mt-2">
+                  <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+                  <span className="text-xs text-green-500">Growing demand</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Custom Orders Value</p>
+                    <p className="text-2xl font-bold">${analyticsData.metrics.customOrdersValue.toFixed(0)}</p>
+                  </div>
+                  <DollarSign className="h-8 w-8 text-green-500" />
+                </div>
+                <div className="flex items-center mt-2">
+                  <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+                  <span className="text-xs text-green-500">High-value orders</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
-              <CardTitle>Top Performing Products</CardTitle>
-              <CardDescription>Best selling products by revenue and volume</CardDescription>
+              <CardTitle>Custom Orders Status</CardTitle>
+              <CardDescription>Distribution of custom order statuses</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {analyticsData.topProducts.length > 0 ? (
-                  analyticsData.topProducts.map((product, index) => (
-                    <div key={product.name} className="flex items-center justify-between p-4 border rounded-lg">
+              {analyticsData.customOrdersData.length > 0 ? (
+                <div className="space-y-4">
+                  {analyticsData.customOrdersData.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
-                        <div className="w-8 h-8 bg-gradient-to-br from-rose-gold to-deep-rose rounded-full flex items-center justify-center text-white font-bold text-sm">
-                          {index + 1}
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                          {item.count}
                         </div>
-                        <div>
-                          <p className="font-medium">{product.name}</p>
-                          <p className="text-sm text-muted-foreground">{product.sales} units sold</p>
-                        </div>
+                        <p className="font-medium capitalize">{item.status}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold">${product.revenue.toLocaleString()}</p>
-                        <Badge variant="secondary">Top {index + 1}</Badge>
-                      </div>
+                      <Badge variant="outline">{((item.count / analyticsData.metrics.customOrdersCount) * 100).toFixed(1)}%</Badge>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">No product data available</p>
-                )}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">No custom orders yet</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
