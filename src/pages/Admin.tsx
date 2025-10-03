@@ -508,7 +508,26 @@ const Admin = () => {
                 <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  const dataStr = JSON.stringify({
+                    stats,
+                    orders: filteredOrders,
+                    products: filteredProducts,
+                    exportDate: new Date().toISOString()
+                  }, null, 2);
+                  const blob = new Blob([dataStr], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `luli-beads-export-${new Date().toISOString().split('T')[0]}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  toast.success('Data exported successfully');
+                }}
+              >
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>
