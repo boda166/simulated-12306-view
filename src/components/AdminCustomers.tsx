@@ -11,7 +11,7 @@ interface Customer {
   id: string;
   email: string;
   full_name: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | null;
   created_at: string;
   phone?: string;
   avatar_url?: string;
@@ -35,13 +35,30 @@ const AdminCustomers = () => {
   const fetchCustomers = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setCustomers(data || []);
+      if (profilesError) throw profilesError;
+
+      // Fetch roles for each profile
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (rolesError) console.error('Error fetching roles:', rolesError);
+
+      // Merge profiles with their roles
+      const customersWithRoles = (profiles || []).map(profile => {
+        const userRole = roles?.find(r => r.user_id === profile.id);
+        return {
+          ...profile,
+          role: userRole?.role || null
+        };
+      });
+
+      setCustomers(customersWithRoles);
     } catch (error) {
       console.error('Error fetching customers:', error);
       toast.error('Failed to load customers');
@@ -86,14 +103,30 @@ const AdminCustomers = () => {
     setFilteredCustomers(filtered);
   };
 
-  const updateCustomerRole = async (customerId: string, newRole: 'admin' | 'user') => {
+  const updateCustomerRole = async (customerId: string, newRole: 'admin' | 'user' | null) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', customerId);
+      if (newRole === null) {
+        // Remove all roles for this user
+        const { error } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', customerId);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // First, remove existing roles
+        await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', customerId);
+
+        // Then insert the new role
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({ user_id: customerId, role: newRole });
+
+        if (error) throw error;
+      }
 
       setCustomers(prev => 
         prev.map(customer => 
@@ -103,7 +136,7 @@ const AdminCustomers = () => {
         )
       );
 
-      toast.success(`Customer role updated to ${newRole}`);
+      toast.success(`Customer role updated to ${newRole || 'user'}`);
     } catch (error) {
       console.error('Error updating customer role:', error);
       toast.error('Failed to update customer role');
@@ -206,8 +239,8 @@ const AdminCustomers = () => {
               
               <div className="flex items-center space-x-4">
                 <div className="text-right">
-                  <Badge variant={getRoleBadgeVariant(customer.role)}>
-                    {customer.role}
+                  <Badge variant={getRoleBadgeVariant(customer.role || 'user')}>
+                    {customer.role || 'user'}
                   </Badge>
                   <p className="text-xs text-muted-foreground mt-1">
                     Joined {new Date(customer.created_at).toLocaleDateString()}
@@ -215,7 +248,7 @@ const AdminCustomers = () => {
                 </div>
                 
                 <Select
-                  value={customer.role}
+                  value={customer.role || 'user'}
                   onValueChange={(newRole: 'admin' | 'user') => updateCustomerRole(customer.id, newRole)}
                 >
                   <SelectTrigger className="w-24">

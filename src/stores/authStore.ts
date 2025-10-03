@@ -44,10 +44,10 @@ export const useAuthStore = create<AuthState>()(
           setTimeout(() => get().fetchUserProfile(), 0);
         }
       },
-      setUserProfile: (profile: any) => set({ 
-        userProfile: profile, 
-        isAdmin: profile?.role === 'admin' 
-      }),
+      setUserProfile: (profile: any) => {
+        // Note: isAdmin is now determined separately from user_roles table
+        set({ userProfile: profile });
+      },
       clearAuth: () => set({ 
         user: null, 
         session: null, 
@@ -67,8 +67,19 @@ export const useAuthStore = create<AuthState>()(
             .eq('id', user.id)
             .single();
 
+          // Fetch user role from user_roles table
+          const { data: userRole } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('role', 'admin')
+            .maybeSingle();
+
           if (profile) {
-            get().setUserProfile(profile);
+            set({ 
+              userProfile: profile,
+              isAdmin: userRole?.role === 'admin'
+            });
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);

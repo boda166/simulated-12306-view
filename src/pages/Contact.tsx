@@ -119,6 +119,7 @@ const Contact = () => {
 
           {/* Contact Information */}
           <div className="space-y-6">
+            {/* WhatsApp temporarily unavailable
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
@@ -144,6 +145,7 @@ const Contact = () => {
                 </div>
               </CardContent>
             </Card>
+            */}
 
             <Card>
               <CardContent className="p-6">

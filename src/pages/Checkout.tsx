@@ -21,7 +21,7 @@ const Checkout = () => {
   const { user, isAuthenticated } = useAuthStore();
   const { cartSummary, clearCart } = useCart();
   const { createOrder } = useOrders();
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentMethod, setPaymentMethod] = useState('cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -251,41 +251,16 @@ const Checkout = () => {
                   <CardTitle className="font-playfair">Payment Method</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                    <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                      <RadioGroupItem value="card" id="card" />
-                      <Label htmlFor="card" className="flex items-center cursor-pointer">
-                        <CreditCard className="w-5 h-5 mr-2" />
-                        Credit Card
-                      </Label>
+                  <div className="flex items-center space-x-2 p-4 border-2 border-rose-gold/20 rounded-lg bg-rose-gold/5">
+                    <Truck className="w-5 h-5 text-rose-gold" />
+                    <div>
+                      <p className="font-medium">Cash on Delivery</p>
+                      <p className="text-sm text-muted-foreground">Pay when you receive your order</p>
                     </div>
-                    <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                      <RadioGroupItem value="cod" id="cod" />
-                      <Label htmlFor="cod" className="flex items-center cursor-pointer">
-                        <Truck className="w-5 h-5 mr-2" />
-                        Cash on Delivery
-                      </Label>
-                    </div>
-                  </RadioGroup>
-
-                  {paymentMethod === 'card' && (
-                    <div className="mt-4 space-y-4">
-                      <div>
-                        <Label htmlFor="cardNumber">Card Number</Label>
-                        <Input id="cardNumber" placeholder="1234 5678 9012 3456" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="expiry">Expiry Date</Label>
-                          <Input id="expiry" placeholder="MM/YY" />
-                        </div>
-                        <div>
-                          <Label htmlFor="cvv">CVV</Label>
-                          <Input id="cvv" placeholder="123" />
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-4">
+                    Online payment options are temporarily unavailable. We currently accept cash on delivery only.
+                  </p>
                 </CardContent>
               </Card>
             </div>
