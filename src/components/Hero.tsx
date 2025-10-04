@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-bags.jpg";
 
 const Hero = () => {
+  const navigate = useNavigate();
+  
   return (
     <section className="relative overflow-hidden bg-gradient-subtle">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,7 +47,7 @@ const Hero = () => {
               <Button 
                 variant="boutique" 
                 size="xl"
-                onClick={() => document.getElementById('custom')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => navigate('/custom-orders')}
               >
                 Custom Orders
               </Button>
