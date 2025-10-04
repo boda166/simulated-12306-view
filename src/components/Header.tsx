@@ -34,7 +34,6 @@ const Header = () => {
   const navigation = [
     { name: "Home", href: "/", isLink: true },
     { name: "Shop", href: "/#shop", isShopLink: true },
-    { name: "Custom Orders", href: "/custom-orders", isLink: true },
     { name: "About", href: "/about", isLink: true },
     { name: "Contact", href: "/contact", isLink: true },
   ];
@@ -82,26 +81,15 @@ const Header = () => {
                 </Link>
               )
             ))}
-            {/* Account and Admin links */}
-            {isAuthenticated && (
-              <>
-                <Link
-                  to="/account"
-                  className="text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200 relative group"
-                >
-                  Account
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-gold transition-all duration-300 group-hover:w-full"></span>
-                </Link>
-                {isAdmin && (
-                  <Link
-                    to="/admin"
-                    className="text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200 relative group"
-                  >
-                    Admin
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-gold transition-all duration-300 group-hover:w-full"></span>
-                  </Link>
-                )}
-              </>
+            {/* Admin link */}
+            {isAuthenticated && isAdmin && (
+              <Link
+                to="/admin"
+                className="text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200 relative group"
+              >
+                Admin
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-gold transition-all duration-300 group-hover:w-full"></span>
+              </Link>
             )}
           </nav>
 
@@ -127,9 +115,9 @@ const Header = () => {
               variant="ghost" 
               size="icon" 
               className="hidden sm:flex hover:text-rose-gold"
-              onClick={() => isAuthenticated ? handleLogout() : navigate('/auth')}
+              onClick={() => isAuthenticated ? navigate('/account') : navigate('/auth')}
             >
-              {isAuthenticated ? <LogOut className="h-5 w-5" /> : <User className="h-5 w-5" />}
+              <User className="h-5 w-5" />
             </Button>
             <Button 
               variant="ghost" 
@@ -188,26 +176,15 @@ const Header = () => {
                   </Link>
                 )
               ))}
-              {/* Account and Admin links in mobile menu */}
-              {isAuthenticated && (
-                <>
-                  <Link
-                    to="/account"
-                    className="block px-3 py-2 text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Account
-                  </Link>
-                  {isAdmin && (
-                    <Link
-                      to="/admin"
-                      className="block px-3 py-2 text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Admin
-                    </Link>
-                  )}
-                </>
+              {/* Admin link in mobile menu */}
+              {isAuthenticated && isAdmin && (
+                <Link
+                  to="/admin"
+                  className="block px-3 py-2 text-foreground hover:text-rose-gold font-montserrat font-medium transition-colors duration-200"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Admin
+                </Link>
               )}
               <div className="flex space-x-4 px-3 pt-4">
                 <Button 
@@ -244,9 +221,16 @@ const Header = () => {
                   variant="ghost" 
                   size="icon" 
                   className="hover:text-rose-gold"
-                  onClick={() => isAuthenticated ? handleLogout() : navigate('/auth')}
+                  onClick={() => {
+                    if (isAuthenticated) {
+                      navigate('/account');
+                      setIsMenuOpen(false);
+                    } else {
+                      navigate('/auth');
+                    }
+                  }}
                 >
-                  {isAuthenticated ? <LogOut className="h-5 w-5" /> : <User className="h-5 w-5" />}
+                  <User className="h-5 w-5" />
                 </Button>
               </div>
             </div>
