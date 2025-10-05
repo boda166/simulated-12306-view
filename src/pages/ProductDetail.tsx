@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Heart, ShoppingBag, ArrowLeft, Star, Truck, Shield, RotateCcw } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import Breadcrumb from '@/components/Breadcrumb';
 import { useAuthStore } from '@/stores/authStore';
 import { useCart } from '@/hooks/useCart';
 import { useWishlistStore } from '@/stores/wishlistStore';
@@ -169,13 +170,13 @@ const ProductDetail = () => {
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
-          <Link to="/" className="hover:text-rose-gold transition-colors">Home</Link>
-          <span>/</span>
-          <Link to="/#shop" className="hover:text-rose-gold transition-colors">Shop</Link>
-          <span>/</span>
-          <span className="text-foreground">{product.name}</span>
-        </div>
+        <Breadcrumb 
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Shop', href: '/#shop' },
+            { label: product.name }
+          ]}
+        />
 
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Product Images */}

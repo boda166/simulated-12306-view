@@ -1,18 +1,22 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, Plus, Minus, ShoppingBag, RefreshCw } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Trash2, Plus, Minus, ShoppingBag, RefreshCw, Info } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthStore } from '@/stores/authStore';
 
 const Cart = () => {
+  const navigate = useNavigate();
   const { cartSummary, updateQuantity, removeItem, clearCart, isLoading, refreshCart } = useCart();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuthStore();
   const [couponCode, setCouponCode] = useState('');
 
   const { items: displayItems, subtotal, shipping, total, isEmpty } = cartSummary;
@@ -205,12 +209,32 @@ const Cart = () => {
                   <span>${total.toFixed(2)}</span>
                 </div>
 
+                {!isAuthenticated && (
+                  <Alert className="mb-4 border-rose-gold/20 bg-rose-gold/5">
+                    <Info className="h-4 w-4 text-rose-gold" />
+                    <AlertDescription className="text-sm">
+                      You need to <button onClick={() => navigate('/auth')} className="font-semibold text-rose-gold hover:underline">log in</button> to proceed to checkout
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <div className="space-y-3">
-                  <Link to="/checkout">
-                    <Button variant="hero" size="lg" className="w-full">
-                      Proceed to Checkout
+                  {isAuthenticated ? (
+                    <Link to="/checkout">
+                      <Button variant="hero" size="lg" className="w-full">
+                        Proceed to Checkout
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button 
+                      variant="hero" 
+                      size="lg" 
+                      className="w-full"
+                      onClick={() => navigate('/auth')}
+                    >
+                      Log In to Checkout
                     </Button>
-                  </Link>
+                  )}
                   <Link to="/#shop">
                     <Button variant="boutique" size="lg" className="w-full">
                       Continue Shopping

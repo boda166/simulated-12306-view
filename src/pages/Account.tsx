@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { User, Mail, Phone, Edit, Package, CreditCard, Settings, ChevronDown, Truck } from 'lucide-react';
+import { User, Mail, Phone, Edit, Package, CreditCard, Settings, ChevronDown, Truck, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -190,9 +190,19 @@ const Account = () => {
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-playfair font-bold text-deep-rose mb-2">My Account</h1>
-            <p className="text-muted-foreground">Manage your profile and view your order history</p>
+          <div className="mb-8 flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-playfair font-bold text-deep-rose mb-2">My Account</h1>
+              <p className="text-muted-foreground">Manage your profile and view your order history</p>
+            </div>
+            <Button 
+              variant="hero" 
+              className="flex items-center gap-2"
+              onClick={() => navigate('/custom-orders')}
+            >
+              <Sparkles className="w-4 h-4" />
+              Request Custom Order
+            </Button>
           </div>
 
           <Tabs defaultValue="profile" className="w-full">

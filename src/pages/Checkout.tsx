@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, CreditCard, Truck } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import Breadcrumb from '@/components/Breadcrumb';
 import { useAuthStore } from '@/stores/authStore';
 import { useCart } from '@/hooks/useCart';
 import { useOrders } from '@/hooks/useOrders';
@@ -128,11 +129,15 @@ const Checkout = () => {
       <Header />
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Breadcrumb 
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Cart', href: '/cart' },
+            { label: 'Checkout' }
+          ]}
+        />
+        
         <div className="mb-8">
-          <Link to="/cart" className="inline-flex items-center text-muted-foreground hover:text-rose-gold transition-colors mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Cart
-          </Link>
           <h1 className="text-3xl font-playfair font-bold text-deep-rose mb-2">Checkout</h1>
           <p className="text-muted-foreground">Complete your order</p>
         </div>
