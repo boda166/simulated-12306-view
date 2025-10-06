@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { analytics } from "@/utils/analytics";
+import ScrollToTop from "@/components/ScrollToTop";
 import Index from "./pages/Index";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
@@ -53,6 +54,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <RouteTracker />
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/product/:id" element={<ProductDetail />} />
