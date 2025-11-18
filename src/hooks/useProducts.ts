@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product, ProductDisplay, transformProduct } from '@/types/product';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 export const useProducts = () => {
   const [products, setProducts] = useState<ProductDisplay[]>([]);
@@ -25,7 +26,7 @@ export const useProducts = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch products';
       setError(errorMessage);
-      console.error('Error fetching products:', err);
+      logger.error('Error fetching products:', err);
       toast.error('Failed to load products');
     } finally {
       setIsLoading(false);
@@ -45,7 +46,7 @@ export const useProducts = () => {
 
       return transformProduct(data);
     } catch (err) {
-      console.error('Error fetching product:', err);
+      logger.error('Error fetching product:', err);
       return null;
     }
   }, []);

@@ -14,6 +14,7 @@ import Footer from '@/components/Footer';
 import { useAuthStore } from '@/stores/authStore';
 import { useOrders } from '@/hooks/useOrders';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 interface Profile {
   id: string;
@@ -81,7 +82,7 @@ const Account = () => {
         phone: data.phone || ''
       });
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      logger.error('Error fetching profile:', error);
       toast.error('Failed to load profile');
     } finally {
       setIsLoading(false);
@@ -109,7 +110,7 @@ const Account = () => {
       toast.success('Profile updated successfully');
       fetchProfile();
     } catch (error) {
-      console.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
       toast.error('Failed to update profile');
     } finally {
       setIsUpdating(false);

@@ -6,6 +6,7 @@ import { Search, X } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { logger } from '@/utils/logger';
 
 interface Product {
   id: string;
@@ -49,7 +50,7 @@ export const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
 
         setSearchResults(products || []);
       } catch (error) {
-        console.error('Error searching products:', error);
+        logger.error('Error searching products:', error);
       } finally {
         setIsLoading(false);
       }

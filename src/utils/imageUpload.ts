@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from './logger';
 
 export interface UploadedImage {
   url: string;
@@ -36,7 +37,7 @@ export const uploadProductImage = async (file: File, isMain: boolean = false): P
       });
 
     if (uploadError) {
-      console.error('Upload error:', uploadError);
+      logger.error('Upload error:', uploadError);
       toast.error('Failed to upload image');
       return null;
     }
@@ -51,7 +52,7 @@ export const uploadProductImage = async (file: File, isMain: boolean = false): P
       is_main: isMain
     };
   } catch (error) {
-    console.error('Error uploading image:', error);
+    logger.error('Error uploading image:', error);
     toast.error('Failed to upload image');
     return null;
   }
@@ -72,13 +73,13 @@ export const deleteProductImage = async (imageUrl: string): Promise<boolean> => 
       .remove([filePath]);
 
     if (error) {
-      console.error('Delete error:', error);
+      logger.error('Delete error:', error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Error deleting image:', error);
+    logger.error('Error deleting image:', error);
     return false;
   }
 };

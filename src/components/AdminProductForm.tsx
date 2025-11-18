@@ -15,6 +15,7 @@ import { productSchema } from '@/utils/productValidation';
 import { uploadProductImage, deleteProductImage, UploadedImage } from '@/utils/imageUpload';
 import { toast } from 'sonner';
 import { ZodError } from 'zod';
+import { logger } from '@/utils/logger';
 
 interface AdminProductFormProps {
   product?: ProductDisplay | null;
@@ -102,7 +103,7 @@ const AdminProductForm = ({ product, onSave, onCancel }: AdminProductFormProps) 
         toast.success(`${successfulUploads.length} image(s) uploaded successfully`);
       }
     } catch (error) {
-      console.error('Error uploading images:', error);
+      logger.error('Error uploading images:', error);
       toast.error('Failed to upload some images');
     } finally {
       setIsUploading(false);
@@ -163,7 +164,7 @@ const AdminProductForm = ({ product, onSave, onCancel }: AdminProductFormProps) 
       toast.success(`Product ${product ? 'updated' : 'created'} successfully!`);
       onSave();
     } catch (error) {
-      console.error('Error saving product:', error);
+      logger.error('Error saving product:', error);
       toast.error(`Failed to ${product ? 'update' : 'create'} product. Please try again.`);
     } finally {
       setIsSubmitting(false);

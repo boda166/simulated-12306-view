@@ -16,6 +16,7 @@ import { useWishlistStore } from '@/stores/wishlistStore';
 import { useToast } from '@/hooks/use-toast';
 import { toast } from 'sonner';
 import { useProducts } from '@/hooks/useProducts';
+import { logger } from '@/utils/logger';
 import { ProductDisplay } from '@/types/product';
 
 const ProductDetail = () => {
@@ -46,7 +47,7 @@ const ProductDetail = () => {
       const productData = await getProductById(id);
       setProduct(productData);
     } catch (error) {
-      console.error('Error fetching product:', error);
+      logger.error('Error fetching product:', error);
       toast.error('Failed to load product');
     } finally {
       setIsLoading(false);
@@ -83,7 +84,7 @@ const ProductDetail = () => {
         description: `${product.name} has been added to your cart.`,
       });
     } catch (error) {
-      console.error('Error adding to cart:', error);
+      logger.error('Error adding to cart:', error);
       uiToast({
         title: "Error",
         description: "Failed to add item to cart. Please try again.",
@@ -110,7 +111,7 @@ const ProductDetail = () => {
         toast.success('Added to wishlist');
       }
     } catch (error) {
-      console.error('Error updating wishlist:', error);
+      logger.error('Error updating wishlist:', error);
       toast.error('Failed to update wishlist');
     }
   };

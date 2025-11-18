@@ -16,6 +16,7 @@ import { useCart } from '@/hooks/useCart';
 import { useOrders } from '@/hooks/useOrders';
 import { toast } from 'sonner';
 import { checkoutSchema } from '@/utils/checkoutValidation';
+import { logger } from '@/utils/logger';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -117,7 +118,7 @@ const Checkout = () => {
       
       navigate('/account'); // Redirect to account page to view orders
     } catch (error) {
-      console.error('Error submitting order:', error);
+      logger.error('Error submitting order:', error);
       toast.error('Failed to place order. Please try again.');
     } finally {
       setIsSubmitting(false);

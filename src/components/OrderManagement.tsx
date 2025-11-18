@@ -9,6 +9,7 @@ import { Eye, Search, Filter, Package } from 'lucide-react';
 import { useOrders } from '@/hooks/useOrders';
 import { toast } from 'sonner';
 import AdminOrderDetails from '@/components/AdminOrderDetails';
+import { logger } from '@/utils/logger';
 
 const OrderManagement = () => {
   const { orders, isLoading, updateOrderStatus, updateOrderShipping } = useOrders();
@@ -31,7 +32,7 @@ const OrderManagement = () => {
     try {
       await updateOrderStatus(orderId, newStatus);
     } catch (error) {
-      console.error('Error updating order status:', error);
+      logger.error('Error updating order status:', error);
     }
   };
 
@@ -43,7 +44,7 @@ const OrderManagement = () => {
     try {
       await updateOrderShipping(orderId, shippingData);
     } catch (error) {
-      console.error('Error updating shipping info:', error);
+      logger.error('Error updating shipping info:', error);
     }
   };
 

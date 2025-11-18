@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Pencil, Trash2, Plus } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { logger } from '@/utils/logger';
 
 export const AdminCategoryManager = () => {
   const { categories, isLoading, createCategory, updateCategory, deleteCategory } = useCategories();
@@ -32,7 +33,7 @@ export const AdminCategoryManager = () => {
       setEditingCategory(null);
       setIsDialogOpen(false);
     } catch (error) {
-      console.error('Error saving category:', error);
+      logger.error('Error saving category:', error);
     } finally {
       setIsSaving(false);
     }

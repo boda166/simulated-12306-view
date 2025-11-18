@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 export interface Category {
   id: string;
@@ -31,7 +32,7 @@ export const useCategories = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch categories';
       setError(errorMessage);
-      console.error('Error fetching categories:', err);
+      logger.error('Error fetching categories:', err);
       toast.error('Failed to load categories');
     } finally {
       setIsLoading(false);

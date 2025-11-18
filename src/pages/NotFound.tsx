@@ -5,12 +5,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Home, Search, ShoppingBag, ArrowLeft } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { logger } from '@/utils/logger';
 
 const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
-    console.error(
+    logger.error(
       "404 Error: User attempted to access non-existent route:",
       location.pathname
     );

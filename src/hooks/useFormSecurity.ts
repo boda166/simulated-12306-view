@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { sanitizeInput, validateEmail, validatePhone, generateCSRFToken } from '@/middleware/securityMiddleware';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface FormSecurityOptions {
   enableCSRF?: boolean;
@@ -155,7 +156,7 @@ export const useFormSecurity = (options: FormSecurityOptions = {}) => {
       await submitFn(sanitizedData);
       return true;
     } catch (error) {
-      console.error('Form submission error:', error);
+      logger.error('Form submission error:', error);
       toast.error('An error occurred while submitting the form');
       return false;
     }
