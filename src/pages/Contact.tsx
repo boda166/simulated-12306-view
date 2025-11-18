@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { contactSchema } from '@/utils/contactValidation';
+import { logger } from '@/utils/logger';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -31,13 +32,13 @@ const Contact = () => {
     
     try {
       // Here you could send to an API endpoint or email service
-      console.log('Contact form submitted:', formData);
+      logger.log('Contact form submission');
       
       // For now, simulate success
       toast.success('Thank you for your message! We\'ll get back to you soon.');
       setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (error) {
-      console.error('Error submitting form:', error);
+      logger.error('Contact form error');
       toast.error('Failed to send message. Please try again.');
     }
   };

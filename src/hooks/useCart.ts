@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
 import { CartItemDisplay, AddCartItemInput, UpdateCartItemInput, CartSummary, transformCartItem, calculateCartSummary } from '@/types/cart';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 export const useCart = () => {
   const [cartItems, setCartItems] = useState<CartItemDisplay[]>([]);
@@ -44,7 +45,7 @@ export const useCart = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch cart items';
       setError(errorMessage);
-      console.error('Error fetching cart:', err);
+      logger.error('Error fetching cart');
       toast.error('Failed to load cart items');
     } finally {
       setIsLoading(false);
@@ -274,7 +275,7 @@ export const useCart = () => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Cart change detected:', payload);
+          logger.log('Cart change detected');
           
           if (payload.eventType === 'INSERT') {
             fetchCartItems(); // Refetch to get product data

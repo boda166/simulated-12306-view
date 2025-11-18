@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CustomOrder, UpdateCustomOrderInput } from '@/types/customOrder';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 export const useAdminCustomOrders = () => {
   const [customOrders, setCustomOrders] = useState<CustomOrder[]>([]);
@@ -38,7 +39,7 @@ export const useAdminCustomOrders = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch custom orders';
       setError(errorMessage);
-      console.error('Error fetching admin custom orders:', err);
+      logger.error('Error fetching admin custom orders');
       toast.error('Failed to load custom orders');
     } finally {
       setIsLoading(false);
@@ -95,7 +96,7 @@ export const useAdminCustomOrders = () => {
       await fetchAllCustomOrders();
       return order;
     } catch (err) {
-      console.error('Error converting custom order:', err);
+      logger.error('Error converting custom order');
       toast.error('Failed to convert custom order');
       throw err;
     } finally {
@@ -140,7 +141,7 @@ export const useAdminCustomOrders = () => {
       toast.success('Custom order updated successfully!');
       return transformedData;
     } catch (err) {
-      console.error('Error updating custom order:', err);
+      logger.error('Error updating custom order');
       toast.error('Failed to update custom order');
       throw err;
     } finally {

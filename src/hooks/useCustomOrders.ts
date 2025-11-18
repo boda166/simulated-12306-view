@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CustomOrder, CreateCustomOrderInput, UpdateCustomOrderInput } from '@/types/customOrder';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 export const useCustomOrders = () => {
   const [customOrders, setCustomOrders] = useState<CustomOrder[]>([]);
@@ -39,7 +40,7 @@ export const useCustomOrders = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch custom orders';
       setError(errorMessage);
-      console.error('Error fetching custom orders:', err);
+      logger.error('Error fetching custom orders');
       toast.error('Failed to load custom orders');
     } finally {
       setIsLoading(false);
@@ -77,7 +78,7 @@ export const useCustomOrders = () => {
       toast.success('Custom order submitted successfully!');
       return transformedData;
     } catch (err) {
-      console.error('Error creating custom order:', err);
+      logger.error('Error creating custom order');
       toast.error('Failed to submit custom order');
       throw err;
     } finally {
@@ -123,7 +124,7 @@ export const useCustomOrders = () => {
       toast.success('Custom order updated successfully!');
       return transformedData;
     } catch (err) {
-      console.error('Error updating custom order:', err);
+      logger.error('Error updating custom order');
       toast.error('Failed to update custom order');
       throw err;
     } finally {
@@ -146,7 +147,7 @@ export const useCustomOrders = () => {
         personalization_details: data.personalization_details as any
       } as CustomOrder;
     } catch (err) {
-      console.error('Error fetching custom order:', err);
+      logger.error('Error fetching custom order');
       throw err;
     }
   }, []);
