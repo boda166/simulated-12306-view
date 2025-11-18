@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Download, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { logger } from '@/utils/logger';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -70,7 +71,7 @@ export const PWAInstallPrompt = () => {
       setDeferredPrompt(null);
       setShowPrompt(false);
     } catch (error) {
-      console.error('Error showing install prompt:', error);
+      logger.error('Error showing install prompt:', error);
     }
   };
 

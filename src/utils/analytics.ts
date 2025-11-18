@@ -1,5 +1,6 @@
 // Analytics utility for tracking user interactions and business metrics
 import '@/types/analytics';
+import { logger } from './logger';
 
 interface AnalyticsEvent {
   name: string;
@@ -271,7 +272,7 @@ class Analytics {
         },
         body: JSON.stringify(event),
       }).catch(error => {
-        console.error('Failed to send analytics event:', error);
+        logger.error('Failed to send analytics event:', error);
       });
     }
 

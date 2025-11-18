@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 const Wishlist = () => {
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ const Wishlist = () => {
       });
       toast.success('Added to cart');
     } catch (error) {
-      console.error('Error adding to cart:', error);
+      logger.error('Error adding to cart:', error);
       toast.error('Failed to add to cart');
     }
   };

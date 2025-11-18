@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 
 interface OfflineState {
   isOnline: boolean;
@@ -90,7 +91,7 @@ export const useOfflineStorage = <T>(key: string, initialValue: T) => {
       setValue(newValue);
       localStorage.setItem(`offline_${key}`, JSON.stringify(newValue));
     } catch (error) {
-      console.error('Failed to save to offline storage:', error);
+      logger.error('Failed to save to offline storage:', error);
     }
   };
 
@@ -99,7 +100,7 @@ export const useOfflineStorage = <T>(key: string, initialValue: T) => {
       setValue(initialValue);
       localStorage.removeItem(`offline_${key}`);
     } catch (error) {
-      console.error('Failed to clear offline storage:', error);
+      logger.error('Failed to clear offline storage:', error);
     }
   };
 
@@ -151,7 +152,7 @@ export const useOfflineQueue = () => {
           duration: 2000,
         });
       } catch (error) {
-        console.error(`Failed to process queue item ${item.id}:`, error);
+        logger.error(`Failed to process queue item ${item.id}:`, error);
         
         // Remove items older than 24 hours to prevent infinite retry
         if (Date.now() - item.timestamp > 24 * 60 * 60 * 1000) {

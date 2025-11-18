@@ -11,6 +11,7 @@ import Footer from '@/components/Footer';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/stores/authStore';
+import { logger } from '@/utils/logger';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ const Cart = () => {
         description: newQuantity === 0 ? "Item removed from cart" : "Quantity updated",
       });
     } catch (error) {
-      console.error('Error updating quantity:', error);
+      logger.error('Error updating quantity:', error);
     }
   };
 
@@ -41,7 +42,7 @@ const Cart = () => {
         description: "Item has been removed from your cart",
       });
     } catch (error) {
-      console.error('Error removing item:', error);
+      logger.error('Error removing item:', error);
     }
   };
 

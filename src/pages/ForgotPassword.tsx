@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -29,7 +30,7 @@ const ForgotPassword = () => {
       setIsSubmitted(true);
       toast.success('Password reset email sent successfully');
     } catch (error: any) {
-      console.error('Password reset error:', error);
+      logger.error('Password reset error:', error);
       toast.error(error.message || 'Failed to send password reset email');
     } finally {
       setIsLoading(false);

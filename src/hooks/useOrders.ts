@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
 import { CustomOrder } from '@/types/customOrder';
+import { logger } from '@/utils/logger';
 
 export interface OrderItem {
   id: string;
@@ -112,12 +113,12 @@ export const useOrders = () => {
       ]);
 
       if (ordersResponse.error) {
-        console.error('Orders error:', ordersResponse.error);
+        logger.error('Orders error:', ordersResponse.error);
         throw ordersResponse.error;
       }
 
       if (customOrdersResponse.error) {
-        console.error('Custom orders error:', customOrdersResponse.error);
+        logger.error('Custom orders error:', customOrdersResponse.error);
         throw customOrdersResponse.error;
       }
 
@@ -126,7 +127,7 @@ export const useOrders = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch orders';
       setError(errorMessage);
-      console.error('Error fetching orders:', err);
+      logger.error('Error fetching orders:', err);
       
       // Only show toast if it's not an auth error
       if (!err?.message?.includes('refresh_token_not_found')) {
@@ -286,7 +287,7 @@ export const useOrders = () => {
 
       return data;
     } catch (err) {
-      console.error('Error fetching order:', err);
+      logger.error('Error fetching order:', err);
       throw err;
     }
   }, []);

@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface AnalyticsData {
   salesData: any[];
@@ -150,7 +151,7 @@ const AdminAnalytics = () => {
       setAnalyticsData(processedData);
 
     } catch (error) {
-      console.error('Error fetching analytics data:', error);
+      logger.error('Error fetching analytics data:', error);
       toast.error('Failed to load analytics data');
     } finally {
       setIsLoading(false);

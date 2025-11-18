@@ -34,6 +34,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { toast } from 'sonner';
 import AdminProductForm from '@/components/AdminProductForm';
+import { logger } from '@/utils/logger';
 import AdminOrderDetails from '@/components/AdminOrderDetails';
 import AdminCustomers from '@/components/AdminCustomers';
 import AdminAnalytics from '@/components/AdminAnalytics';
@@ -210,7 +211,7 @@ const Admin = () => {
         toast.success('Data refreshed successfully');
       }
     } catch (error) {
-      console.error('Error fetching admin data:', error);
+      logger.error('Error fetching admin data:', error);
       toast.error('Failed to load admin data');
       
       // Fallback to empty data
@@ -306,7 +307,7 @@ const Admin = () => {
       setShowProductForm(false);
       fetchAdminData();
     } catch (error) {
-      console.error('Error creating product:', error);
+      logger.error('Error creating product:', error);
       toast.error('Failed to create product');
     }
   };
@@ -335,7 +336,7 @@ const Admin = () => {
       setShowProductForm(false);
       fetchAdminData();
     } catch (error) {
-      console.error('Error updating product:', error);
+      logger.error('Error updating product:', error);
       toast.error('Failed to update product');
     }
   };
@@ -360,7 +361,7 @@ const Admin = () => {
       toast.success('Product deleted successfully');
       fetchAdminData();
     } catch (error) {
-      console.error('Error deleting product:', error);
+      logger.error('Error deleting product:', error);
       toast.error('Failed to delete product');
     }
   };
@@ -386,7 +387,7 @@ const Admin = () => {
       toast.success('Order status updated successfully');
       fetchAdminData();
     } catch (error) {
-      console.error('Error updating order status:', error);
+      logger.error('Error updating order status:', error);
       toast.error('Failed to update order status');
     }
   };
@@ -417,7 +418,7 @@ const Admin = () => {
       toast.success('Shipping information updated successfully');
       fetchAdminData();
     } catch (error) {
-      console.error('Error updating shipping info:', error);
+      logger.error('Error updating shipping info:', error);
       toast.error('Failed to update shipping information');
     }
   };

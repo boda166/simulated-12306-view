@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from './authStore';
+import { logger } from '@/utils/logger';
 
 interface WishlistItem {
   id: string;
@@ -45,7 +46,7 @@ export const useWishlistStore = create<WishlistStore>()(
 
           await get().syncWithDatabase();
         } catch (error) {
-          console.error('Error adding to wishlist:', error);
+          logger.error('Error adding to wishlist:', error);
           throw error;
         } finally {
           set({ isLoading: false });
@@ -70,7 +71,7 @@ export const useWishlistStore = create<WishlistStore>()(
 
           await get().syncWithDatabase();
         } catch (error) {
-          console.error('Error removing from wishlist:', error);
+          logger.error('Error removing from wishlist:', error);
           throw error;
         } finally {
           set({ isLoading: false });
@@ -115,7 +116,7 @@ export const useWishlistStore = create<WishlistStore>()(
             set({ items: formattedItems });
           }
         } catch (error) {
-          console.error('Error syncing wishlist with database:', error);
+          logger.error('Error syncing wishlist with database:', error);
         }
       },
     }),
