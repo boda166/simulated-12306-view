@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, UserCheck, UserX, MoreHorizontal } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface Customer {
   id: string;
@@ -47,7 +48,7 @@ const AdminCustomers = () => {
         .from('user_roles')
         .select('user_id, role');
 
-      if (rolesError) console.error('Error fetching roles:', rolesError);
+      if (rolesError) logger.error('Error fetching roles');
 
       // Merge profiles with their roles
       const customersWithRoles = (profiles || []).map(profile => {
@@ -60,7 +61,7 @@ const AdminCustomers = () => {
 
       setCustomers(customersWithRoles);
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      logger.error('Error fetching customers');
       toast.error('Failed to load customers');
       // Fallback mock data
       setCustomers([
@@ -138,7 +139,7 @@ const AdminCustomers = () => {
 
       toast.success(`Customer role updated to ${newRole || 'user'}`);
     } catch (error) {
-      console.error('Error updating customer role:', error);
+      logger.error('Error updating customer role');
       toast.error('Failed to update customer role');
     }
   };

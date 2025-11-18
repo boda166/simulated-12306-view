@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
+import { logger } from '@/utils/logger';
 
 interface AuthState {
   user: User | null;
@@ -82,7 +83,7 @@ export const useAuthStore = create<AuthState>()(
             });
           }
         } catch (error) {
-          console.error('Error fetching user profile:', error);
+          logger.error('Error fetching user profile');
         }
       },
 
@@ -123,7 +124,7 @@ export const useAuthStore = create<AuthState>()(
           const { data: { session }, error } = await supabase.auth.getSession();
           
           if (error) {
-            console.warn('Session error:', error);
+            logger.warn('Session error');
             // Clear any invalid session data
             await supabase.auth.signOut();
             set({ 
@@ -178,7 +179,7 @@ export const useAuthStore = create<AuthState>()(
             }
           });
         } catch (error) {
-          console.error('Auth initialization error:', error);
+          logger.error('Auth initialization error');
           set({ 
             session: null, 
             user: null, 

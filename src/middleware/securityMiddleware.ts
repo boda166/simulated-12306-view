@@ -1,6 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 
-// Rate limiting store
+// NOTE: Client-side rate limiting below is for UX only and provides NO security.
+// It can be easily bypassed by refreshing the page, opening new tabs, or using dev tools.
+// For actual rate limiting protection, implement server-side rate limiting in Edge Functions.
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
 // XSS Protection
@@ -12,7 +14,9 @@ export const sanitizeInput = (input: string): string => {
     .trim();
 };
 
-// Rate Limiting
+// Rate Limiting (UX ONLY - NOT FOR SECURITY)
+// WARNING: This is client-side and can be easily bypassed. Use for UX enhancement only.
+// For security, implement rate limiting server-side in Edge Functions or database triggers.
 export const rateLimit = (
   identifier: string, 
   maxRequests: number = 100, 
