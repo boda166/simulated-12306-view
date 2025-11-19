@@ -5,10 +5,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Grid, List, Filter, SlidersHorizontal } from 'lucide-react';
 import ProductCard from './ProductCard';
 import { useProducts } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
 import { ProductDisplay } from '@/types/product';
 
 const ProductGrid = () => {
   const { products, isLoading } = useProducts();
+  const { categories } = useCategories();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedProductType, setSelectedProductType] = useState<string>('all');
@@ -103,10 +105,11 @@ const ProductGrid = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="evening">Evening</SelectItem>
-                <SelectItem value="bridal">Bridal</SelectItem>
-                <SelectItem value="luxury">Luxury</SelectItem>
-                <SelectItem value="classic">Classic</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
