@@ -99,7 +99,8 @@ export const useWishlistStore = create<WishlistStore>()(
               products!inner (
                 name,
                 price,
-                image_url
+                image_url,
+                images
               )
             `)
             .eq('user_id', user.id);
@@ -110,7 +111,7 @@ export const useWishlistStore = create<WishlistStore>()(
               productId: item.product_id,
               productName: item.products?.name || 'Unknown Product',
               productPrice: item.products?.price || 0,
-              productImage: item.products?.image_url || '',
+              productImage: item.products?.image_url || item.products?.images?.[0] || '',
             }));
 
             set({ items: formattedItems });
