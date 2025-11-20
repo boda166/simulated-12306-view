@@ -22,9 +22,27 @@ export const useCustomOrders = () => {
       setIsLoading(true);
       setError(null);
 
+      // SECURITY: Explicitly exclude admin_notes from user queries
       const { data, error: fetchError } = await supabase
         .from('custom_orders')
-        .select('*')
+        .select(`
+          id,
+          user_id,
+          product_name,
+          description,
+          reference_images,
+          preferred_colors,
+          preferred_handles,
+          personalization_details,
+          budget_range,
+          delivery_date,
+          estimated_price,
+          final_price,
+          status,
+          converted_order_id,
+          created_at,
+          updated_at
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -56,6 +74,7 @@ export const useCustomOrders = () => {
     try {
       setIsLoading(true);
 
+      // SECURITY: Explicitly exclude admin_notes from user queries
       const { data, error } = await supabase
         .from('custom_orders')
         .insert([{
@@ -63,7 +82,24 @@ export const useCustomOrders = () => {
           user_id: user.id,
           personalization_details: orderData.personalization_details as any
         }])
-        .select()
+        .select(`
+          id,
+          user_id,
+          product_name,
+          description,
+          reference_images,
+          preferred_colors,
+          preferred_handles,
+          personalization_details,
+          budget_range,
+          delivery_date,
+          estimated_price,
+          final_price,
+          status,
+          converted_order_id,
+          created_at,
+          updated_at
+        `)
         .single();
 
       if (error) throw error;
@@ -102,12 +138,30 @@ export const useCustomOrders = () => {
           updateData.personalization_details as any : undefined
       };
 
+      // SECURITY: Explicitly exclude admin_notes from user queries
       const { data, error } = await supabase
         .from('custom_orders')
         .update(updatePayload)
         .eq('id', updateData.id)
         .eq('user_id', user.id)
-        .select()
+        .select(`
+          id,
+          user_id,
+          product_name,
+          description,
+          reference_images,
+          preferred_colors,
+          preferred_handles,
+          personalization_details,
+          budget_range,
+          delivery_date,
+          estimated_price,
+          final_price,
+          status,
+          converted_order_id,
+          created_at,
+          updated_at
+        `)
         .single();
 
       if (error) throw error;
