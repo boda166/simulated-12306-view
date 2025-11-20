@@ -412,71 +412,7 @@ export type Database = {
       }
     }
     Views: {
-      user_custom_orders: {
-        Row: {
-          budget_range: string | null
-          converted_order_id: string | null
-          created_at: string | null
-          delivery_date: string | null
-          description: string | null
-          estimated_price: number | null
-          final_price: number | null
-          id: string | null
-          personalization_details: Json | null
-          preferred_colors: string[] | null
-          preferred_handles: string[] | null
-          product_name: string | null
-          reference_images: string[] | null
-          status: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          budget_range?: string | null
-          converted_order_id?: string | null
-          created_at?: string | null
-          delivery_date?: string | null
-          description?: string | null
-          estimated_price?: number | null
-          final_price?: number | null
-          id?: string | null
-          personalization_details?: Json | null
-          preferred_colors?: string[] | null
-          preferred_handles?: string[] | null
-          product_name?: string | null
-          reference_images?: string[] | null
-          status?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          budget_range?: string | null
-          converted_order_id?: string | null
-          created_at?: string | null
-          delivery_date?: string | null
-          description?: string | null
-          estimated_price?: number | null
-          final_price?: number | null
-          id?: string | null
-          personalization_details?: Json | null
-          preferred_colors?: string[] | null
-          preferred_handles?: string[] | null
-          product_name?: string | null
-          reference_images?: string[] | null
-          status?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "custom_orders_converted_order_id_fkey"
-            columns: ["converted_order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       has_role: {
